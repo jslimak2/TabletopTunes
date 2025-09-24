@@ -26,6 +26,10 @@ pids
 *.seed
 *.pid.lock
 
+# Dependency directories
+node_modules/
+jspm_packages/
+
 # Optional npm cache directory
 .npm
 
@@ -44,3 +48,23 @@ pids
 # Temporary folders
 tmp/
 temp/
+
+# Build outputs
+dist/
+dist-electron/
+build/
+
+# Mobile app build files
+android/
+ios/
+capacitor-plugins/
+
+# Generated icons (keep the source create-icons.py)
+generate-icons.html
+
+# Electron builder output
+*.deb
+*.AppImage
+*.dmg
+*.exe
+*.msi
