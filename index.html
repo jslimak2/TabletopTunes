@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TabletopTunes - Board Game Soundtrack Player</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-dice-d20"></i> TabletopTunes</h1>
+            <p>The Ultimate Board Game Soundtrack Player</p>
+        </header>
+
+        <main>
+            <div class="player-section">
+                <div class="now-playing">
+                    <div class="track-info">
+                        <h3 id="current-track">No track selected</h3>
+                        <p id="current-category">Select a soundtrack category</p>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress" id="progress"></div>
+                        </div>
+                        <div class="time-display">
+                            <span id="current-time">0:00</span>
+                            <span id="duration">0:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button id="prev-btn" class="control-btn"><i class="fas fa-step-backward"></i></button>
+                    <button id="play-pause-btn" class="control-btn primary"><i class="fas fa-play"></i></button>
+                    <button id="next-btn" class="control-btn"><i class="fas fa-step-forward"></i></button>
+                    <button id="shuffle-btn" class="control-btn"><i class="fas fa-random"></i></button>
+                    <button id="loop-btn" class="control-btn"><i class="fas fa-redo"></i></button>
+                </div>
+
+                <div class="volume-control">
+                    <i class="fas fa-volume-up"></i>
+                    <input type="range" id="volume-slider" min="0" max="100" value="70">
+                    <span id="volume-display">70%</span>
+                </div>
+            </div>
+
+            <div class="categories-section">
+                <h2>Soundtrack Categories</h2>
+                <div class="categories-grid">
+                    <div class="category-card" data-category="ambient">
+                        <i class="fas fa-leaf"></i>
+                        <h3>Ambient</h3>
+                        <p>Peaceful background sounds</p>
+                    </div>
+                    <div class="category-card" data-category="fantasy">
+                        <i class="fas fa-dragon"></i>
+                        <h3>Fantasy</h3>
+                        <p>Medieval and magical themes</p>
+                    </div>
+                    <div class="category-card" data-category="scifi">
+                        <i class="fas fa-rocket"></i>
+                        <h3>Sci-Fi</h3>
+                        <p>Futuristic and space themes</p>
+                    </div>
+                    <div class="category-card" data-category="horror">
+                        <i class="fas fa-ghost"></i>
+                        <h3>Horror</h3>
+                        <p>Spooky and suspenseful</p>
+                    </div>
+                    <div class="category-card" data-category="adventure">
+                        <i class="fas fa-compass"></i>
+                        <h3>Adventure</h3>
+                        <p>Epic quests and exploration</p>
+                    </div>
+                    <div class="category-card" data-category="tavern">
+                        <i class="fas fa-beer"></i>
+                        <h3>Tavern</h3>
+                        <p>Social and festive atmosphere</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="playlist-section">
+                <h2>Current Playlist</h2>
+                <div class="playlist-controls">
+                    <input type="text" id="playlist-name" placeholder="Enter playlist name">
+                    <button id="save-playlist">Save Playlist</button>
+                    <button id="load-playlist">Load Playlist</button>
+                </div>
+                <div class="track-list" id="track-list">
+                    <p class="empty-playlist">Select a category to see available tracks</p>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Perfect for D&D, board games, and tabletop RPG sessions</p>
+        </footer>
+    </div>
+
+    <audio id="audio-player" preload="none"></audio>
+    <script src="script.js"></script>
+</body>
+</html>
