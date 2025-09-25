@@ -235,6 +235,39 @@ class TabletopTunes {
         this.showNotification('Disconnected from Spotify');
     }
 
+    setupSpotifyPlayer() {
+        // Initialize Spotify Web Playback SDK player
+        if (window.Spotify && this.spotifyAccessToken) {
+            try {
+                this.spotifyPlayer = new window.Spotify.Player({
+                    name: 'TabletopTunes Player',
+                    getOAuthToken: cb => { cb(this.spotifyAccessToken); },
+                    volume: 0.5
+                });
+
+                // Ready event
+                this.spotifyPlayer.addListener('ready', ({ device_id }) => {
+                    console.log('Spotify player ready with Device ID', device_id);
+                    this.spotifyDeviceId = device_id;
+                });
+
+                // Not Ready event
+                this.spotifyPlayer.addListener('not_ready', ({ device_id }) => {
+                    console.log('Spotify player not ready with Device ID', device_id);
+                });
+
+                // Connect to the player
+                this.spotifyPlayer.connect();
+            } catch (error) {
+                console.warn('Failed to initialize Spotify player:', error);
+                // Continue without player functionality
+            }
+        } else {
+            console.log('Spotify SDK or access token not available for player setup');
+            // This is expected when running without real Spotify authentication
+        }
+    }
+
     updateSpotifyRecommendations() {
         const recommendationsDiv = document.getElementById('game-recommendations');
         if (!recommendationsDiv) return;
@@ -1240,6 +1273,11 @@ class TabletopTunes {
                 this.matchingMode = 'category';
                 this.currentBoardGame = null;
                 document.querySelector('.playlist-section h2').textContent = 'Current Playlist';
+            } else if (result.category) {
+                // Handle theme-based results
+                this.currentBoardGame = gameInput;
+                this.matchingMode = 'boardgame';
+                this.displayThemeBasedSuggestions(result, gameInput);
             }
         } catch (error) {
             console.error('Game search error:', error);
@@ -1690,6 +1728,71 @@ class TabletopTunes {
         trackList.innerHTML = html;
         
         this.showNotification(`Found "${bggGame.name}" on BoardGameGeek!`, 'success');
+    }
+
+    displayThemeBasedSuggestions(result, gameName) {
+        const trackList = document.getElementById('track-list');
+        const categoryTitle = document.querySelector('.playlist-section h2');
+        
+        categoryTitle.textContent = `Theme-Based Suggestions for ${gameName}`;
+        
+        let html = `<div class="game-suggestions theme-suggestions">`;
+        
+        // Add theme analysis info
+        html += `
+            <div class="theme-analysis-info">
+                <div class="analysis-header">
+                    <h3><i class="fas fa-search"></i> ${gameName}</h3>
+                    <div class="analysis-badge">
+                        <i class="fas fa-lightbulb"></i> Theme Analysis
+                    </div>
+                </div>
+                
+                <div class="analysis-details">
+                    <p class="analysis-reason">${result.reason}</p>
+                    <div class="confidence-meter">
+                        <span class="confidence-label">Confidence: ${result.confidence}%</span>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: ${result.confidence}%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                ${result.detectedKeywords && result.detectedKeywords.length > 0 ? `
+                    <div class="detected-keywords">
+                        <strong>Detected Keywords:</strong> 
+                        ${result.detectedKeywords.slice(0, 5).map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        
+        // Add category-based soundtrack suggestions
+        html += `
+            <div class="category-suggestion theme-category-suggestion" onclick="tabletopTunes.selectCategory('${result.category}')">
+                <div class="category-header">
+                    <h4><i class="fas fa-${this.getCategoryIcon(result.category)}"></i> ${result.category.charAt(0).toUpperCase() + result.category.slice(1)} Soundtracks</h4>
+                    <div class="suggested-badge">
+                        <i class="fas fa-magic"></i> Suggested
+                    </div>
+                </div>
+                <p class="category-description">Based on theme analysis, we suggest ${result.category} soundtracks</p>
+                <div class="sample-tracks">
+                    ${result.tracks.slice(0, 3).map(track => `
+                        <div class="sample-track">
+                            <span class="track-name">${track.name}</span>
+                            <span class="track-duration">${track.duration}</span>
+                        </div>
+                    `).join('')}
+                    ${result.tracks.length > 3 ? `<div class="more-tracks">+${result.tracks.length - 3} more tracks</div>` : ''}
+                </div>
+            </div>
+        `;
+        
+        html += `</div>`;
+        trackList.innerHTML = html;
+        
+        this.showNotification(`Theme analysis complete for "${gameName}"!`, 'success');
     }
 
     getCategoryIcon(category) {
