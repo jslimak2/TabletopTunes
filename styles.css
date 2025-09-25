@@ -2899,3 +2899,172 @@ input[type="text"]:focus, textbox:focus {
         width: 100%;
     }
 }
+
+/* BoardGameGeek Integration Styles */
+.bgg-suggestions {
+    border: 2px solid var(--secondary-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+}
+
+.bgg-game-info {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.bgg-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-md);
+}
+
+.bgg-header h3 {
+    color: var(--text-primary);
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.bgg-badge {
+    background: var(--secondary-color);
+    color: white;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.game-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+}
+
+.game-description {
+    margin-bottom: var(--space-md);
+    padding: var(--space-md);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--secondary-color);
+}
+
+.game-description p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.bgg-theme {
+    background: linear-gradient(135deg, var(--secondary-color), var(--secondary-dark));
+    color: white;
+}
+
+.category-tag {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    border: 1px solid var(--gray-600);
+}
+
+.bgg-categories {
+    margin-top: var(--space-md);
+}
+
+.bgg-categories strong {
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: var(--space-sm);
+}
+
+.bgg-suggestion {
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+}
+
+.bgg-suggestion:hover {
+    border-color: var(--secondary-color);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+}
+
+.auto-generated-badge {
+    background: var(--accent-color);
+    color: var(--bg-primary);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.bgg-suggestions .movie-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+}
+
+.bgg-suggestions .movie-header h4 {
+    margin: 0;
+    flex: 1;
+}
+
+/* Enhanced notification styles for BGG integration */
+.notification.success {
+    background: linear-gradient(135deg, var(--secondary-color), var(--secondary-dark));
+    border-color: var(--secondary-color);
+}
+
+.notification.info {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border-color: var(--primary-color);
+}
+
+/* Mobile responsive adjustments for BGG content */
+@media (max-width: 768px) {
+    .bgg-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+    
+    .game-details {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+    
+    .detail-item {
+        justify-content: center;
+    }
+    
+    .bgg-suggestions .movie-header {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+    
+    .auto-generated-badge {
+        align-self: flex-start;
+    }
+}

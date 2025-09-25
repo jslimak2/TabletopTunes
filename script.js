@@ -17,6 +17,9 @@ class TabletopTunes {
         this.spotifyAccessToken = null;
         this.isSpotifyConnected = false;
         
+        // BoardGameGeek API integration
+        this.bggService = new BGGApiService();
+        
         // Mock soundtrack data (in a real app, this would come from a server or local files)
         this.soundtracks = {
             ambient: [
@@ -1156,16 +1159,36 @@ class TabletopTunes {
         this.displayPlaylist();
     }
     
-    showNotification(message) {
-        // Create and show a simple notification
+    showNotification(message, type = 'default') {
+        // Create and show a notification with support for different types
         const notification = document.createElement('div');
-        notification.className = 'notification';
+        notification.className = `notification ${type}`;
         notification.textContent = message;
+        
+        // Define different styles for notification types
+        let backgroundColor;
+        switch (type) {
+            case 'success':
+                backgroundColor = 'linear-gradient(45deg, #10b981, #059669)';
+                break;
+            case 'info':
+                backgroundColor = 'linear-gradient(45deg, #6366f1, #4f46e5)';
+                break;
+            case 'warning':
+                backgroundColor = 'linear-gradient(45deg, #f59e0b, #d97706)';
+                break;
+            case 'error':
+                backgroundColor = 'linear-gradient(45deg, #ef4444, #dc2626)';
+                break;
+            default:
+                backgroundColor = 'linear-gradient(45deg, #ff6b6b, #4ecdc4)';
+        }
+        
         notification.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            background: ${backgroundColor};
             color: white;
             padding: 15px 20px;
             border-radius: 8px;
@@ -1173,6 +1196,8 @@ class TabletopTunes {
             z-index: 1000;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             animation: slideIn 0.3s ease;
+            max-width: 350px;
+            word-wrap: break-word;
         `;
         
         // Add slide-in animation
@@ -1187,7 +1212,8 @@ class TabletopTunes {
         
         document.body.appendChild(notification);
         
-        // Remove notification after 3 seconds
+        // Remove notification after 3 seconds (longer for info/success messages)
+        const duration = type === 'info' || type === 'success' ? 4000 : 3000;
         setTimeout(() => {
             notification.style.animation = 'slideIn 0.3s ease reverse';
             setTimeout(() => {
@@ -1195,29 +1221,34 @@ class TabletopTunes {
                     notification.parentNode.removeChild(notification);
                 }
             }, 300);
-        }, 3000);
+        }, duration);
     }
 
     // Board Game Matching Functions
-    performGameSearch() {
+    async performGameSearch() {
         const gameInput = document.getElementById('game-search').value.trim();
         if (!gameInput) {
             this.showNotification('Please enter a board game name');
             return;
         }
         
-        const result = this.searchBoardGame(gameInput);
-        if (!result) {
-            this.showNotification(`No specific suggestions found for "${gameInput}". Try browsing categories or popular games.`);
-            // Reset to category browsing
-            this.matchingMode = 'category';
-            this.currentBoardGame = null;
-            document.querySelector('.playlist-section h2').textContent = 'Current Playlist';
+        try {
+            const result = await this.searchBoardGame(gameInput);
+            if (!result) {
+                this.showNotification(`No specific suggestions found for "${gameInput}". Try browsing categories or popular games.`);
+                // Reset to category browsing
+                this.matchingMode = 'category';
+                this.currentBoardGame = null;
+                document.querySelector('.playlist-section h2').textContent = 'Current Playlist';
+            }
+        } catch (error) {
+            console.error('Game search error:', error);
+            this.showNotification('Error searching for game. Please try again.');
         }
     }
 
-    searchBoardGame(gameName) {
-        // Load the board game database
+    async searchBoardGame(gameName) {
+        // First, check local database for exact match
         if (typeof BOARD_GAMES_DATABASE !== 'undefined') {
             const game = BOARD_GAMES_DATABASE[gameName];
             if (game) {
@@ -1228,7 +1259,30 @@ class TabletopTunes {
             }
         }
         
-        // Fallback to theme-based matching if exact game not found
+        // Check for partial matches in local database
+        const localGame = this.getGameFromDatabase(gameName.toLowerCase());
+        if (localGame) {
+            this.currentBoardGame = gameName;
+            this.matchingMode = 'boardgame';
+            this.displayGameSuggestions(localGame);
+            return localGame;
+        }
+        
+        // Try BoardGameGeek API as fallback
+        this.showNotification('Searching BoardGameGeek database...', 'info');
+        try {
+            const bggGame = await this.bggService.getGameByName(gameName);
+            if (bggGame) {
+                this.currentBoardGame = gameName;
+                this.matchingMode = 'boardgame';
+                this.displayBGGGameSuggestions(bggGame);
+                return bggGame;
+            }
+        } catch (error) {
+            console.warn('BGG API search failed:', error);
+        }
+        
+        // Final fallback to theme-based matching
         return this.suggestByTheme(gameName);
     }
 
@@ -1562,6 +1616,82 @@ class TabletopTunes {
         trackList.innerHTML = html;
     }
 
+    displayBGGGameSuggestions(bggGame) {
+        const trackList = document.getElementById('track-list');
+        const categoryTitle = document.querySelector('.playlist-section h2');
+        
+        categoryTitle.textContent = `Recommendations for ${bggGame.name}`;
+        
+        let html = `<div class="game-suggestions bgg-suggestions">`;
+        
+        // Add BGG game info card
+        html += `
+            <div class="bgg-game-info">
+                <div class="bgg-header">
+                    <h3><i class="fas fa-dice"></i> ${bggGame.name}</h3>
+                    <div class="bgg-badge">
+                        <i class="fas fa-external-link-alt"></i> BoardGameGeek
+                    </div>
+                </div>
+                
+                <div class="game-details">
+                    ${bggGame.yearPublished ? `<span class="detail-item"><i class="fas fa-calendar"></i> ${bggGame.yearPublished}</span>` : ''}
+                    ${bggGame.minPlayers && bggGame.maxPlayers ? `<span class="detail-item"><i class="fas fa-users"></i> ${bggGame.minPlayers}-${bggGame.maxPlayers} players</span>` : ''}
+                    ${bggGame.playingTime ? `<span class="detail-item"><i class="fas fa-clock"></i> ${bggGame.playingTime} min</span>` : ''}
+                    ${bggGame.rating ? `<span class="detail-item"><i class="fas fa-star"></i> ${bggGame.rating.toFixed(1)}/10</span>` : ''}
+                </div>
+                
+                ${bggGame.description ? `
+                    <div class="game-description">
+                        <p>${bggGame.description.substring(0, 200)}${bggGame.description.length > 200 ? '...' : ''}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="detected-themes">
+                    <strong>Detected Themes:</strong> 
+                    ${bggGame.themes.map(theme => `<span class="theme-tag bgg-theme">${theme}</span>`).join('')}
+                </div>
+                
+                ${bggGame.categories && bggGame.categories.length > 0 ? `
+                    <div class="bgg-categories">
+                        <strong>BGG Categories:</strong> 
+                        ${bggGame.categories.slice(0, 5).map(cat => `<span class="category-tag">${cat}</span>`).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        
+        // Add soundtrack suggestions
+        if (bggGame.suggestedSoundtracks && bggGame.suggestedSoundtracks.length > 0) {
+            bggGame.suggestedSoundtracks.forEach((suggestion, index) => {
+                html += `
+                    <div class="movie-suggestion bgg-suggestion" onclick="tabletopTunes.loadBGGMovieSoundtrack('${suggestion.movie}', ${index}, '${bggGame.name}')">
+                        <div class="movie-header">
+                            <h4><i class="fas fa-film"></i> ${suggestion.movie}</h4>
+                            <div class="auto-generated-badge">
+                                <i class="fas fa-robot"></i> Auto-generated
+                            </div>
+                        </div>
+                        <p class="suggestion-reason">${suggestion.reason}</p>
+                        <div class="suggested-tracks">
+                            ${suggestion.tracks.map((track, trackIndex) => `
+                                <div class="suggested-track" onclick="event.stopPropagation(); tabletopTunes.playBGGMovieTrack('${suggestion.movie}', '${track}', ${trackIndex}, '${bggGame.name}')">
+                                    <span class="track-name">${track}</span>
+                                    <span class="track-source">from ${suggestion.movie}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        html += `</div>`;
+        trackList.innerHTML = html;
+        
+        this.showNotification(`Found "${bggGame.name}" on BoardGameGeek!`, 'success');
+    }
+
     getCategoryIcon(category) {
         const icons = {
             fantasy: 'dragon',
@@ -1608,6 +1738,55 @@ class TabletopTunes {
             url: "#",
             description: `From ${movieName}`,
             movie: movieName
+        }];
+        
+        this.currentTrackIndex = 0;
+        this.currentCategory = 'movie';
+        this.displayPlaylist();
+        this.updateCurrentTrackInfo();
+        this.play();
+    }
+
+    loadBGGMovieSoundtrack(movieName, suggestionIndex, gameName) {
+        // Load BGG movie soundtrack similar to regular movie soundtrack
+        this.showNotification(`Loading ${movieName} soundtrack...`);
+        
+        // Get the BGG game data from the current search
+        if (this.currentBoardGame) {
+            // For now, create a generic playlist since we don't have stored BGG games
+            // In a full implementation, you might cache the BGG game data
+            const genericTracks = [
+                'Main Theme', 'Opening Credits', 'The Journey Begins', 
+                'Rising Action', 'Conflict', 'Resolution', 'End Credits'
+            ];
+            
+            this.currentPlaylist = genericTracks.map((trackName, index) => ({
+                name: trackName,
+                duration: `9:99`,
+                url: "#",
+                description: `From ${movieName} (BGG suggestion for ${gameName})`,
+                movie: movieName,
+                source: 'bgg'
+            }));
+            
+            this.currentTrackIndex = 0;
+            this.currentCategory = 'movie';
+            this.displayPlaylist();
+            this.updateCurrentTrackInfo();
+        }
+    }
+
+    playBGGMovieTrack(movieName, trackName, trackIndex, gameName) {
+        this.showNotification(`Playing "${trackName}" from ${movieName}`);
+        
+        // Create a single track playlist for BGG suggestions
+        this.currentPlaylist = [{
+            name: trackName,
+            duration: `9:99`,
+            url: "#",
+            description: `From ${movieName} (BGG suggestion for ${gameName})`,
+            movie: movieName,
+            source: 'bgg'
         }];
         
         this.currentTrackIndex = 0;
