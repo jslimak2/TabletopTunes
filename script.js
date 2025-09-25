@@ -20,40 +20,40 @@ class TabletopTunes {
         // Mock soundtrack data (in a real app, this would come from a server or local files)
         this.soundtracks = {
             ambient: [
-                { name: "Forest Whispers", duration: "4:32", url: "#", description: "Gentle forest sounds", movie: "Studio Ghibli Collection" },
-                { name: "Ocean Breeze", duration: "3:45", url: "#", description: "Calming ocean waves", movie: "Moana" },
-                { name: "Mountain Wind", duration: "5:12", url: "#", description: "High altitude ambience", movie: "The Secret Garden" },
-                { name: "Rain Drops", duration: "6:00", url: "#", description: "Soft rainfall sounds", movie: "Amélie" }
+                { name: "Forest Whispers", duration: "9:99", url: "#", description: "Gentle forest sounds", movie: "Studio Ghibli Collection" },
+                { name: "Ocean Breeze", duration: "9:99", url: "#", description: "Calming ocean waves", movie: "Moana" },
+                { name: "Mountain Wind", duration: "9:99", url: "#", description: "High altitude ambience", movie: "The Secret Garden" },
+                { name: "Rain Drops", duration: "9:99", url: "#", description: "Soft rainfall sounds", movie: "Amélie" }
             ],
             fantasy: [
-                { name: "Dragon's Lair", duration: "3:28", url: "#", description: "Epic fantasy adventure", movie: "Lord of the Rings" },
-                { name: "Enchanted Forest", duration: "4:15", url: "#", description: "Magical woodland journey", movie: "The Chronicles of Narnia" },
-                { name: "Castle Walls", duration: "3:52", url: "#", description: "Medieval fortress theme", movie: "Game of Thrones" },
-                { name: "Mystic Spell", duration: "2:43", url: "#", description: "Magical incantations", movie: "Harry Potter" }
+                { name: "Dragon's Lair", duration: "9:99", url: "#", description: "Epic fantasy adventure", movie: "Lord of the Rings" },
+                { name: "Enchanted Forest", duration: "9:99", url: "#", description: "Magical woodland journey", movie: "The Chronicles of Narnia" },
+                { name: "Castle Walls", duration: "9:99", url: "#", description: "Medieval fortress theme", movie: "Game of Thrones" },
+                { name: "Mystic Spell", duration: "9:99", url: "#", description: "Magical incantations", movie: "Harry Potter" }
             ],
             scifi: [
-                { name: "Space Station", duration: "4:20", url: "#", description: "Futuristic facility ambience", movie: "Interstellar" },
-                { name: "Alien World", duration: "5:05", url: "#", description: "Extraterrestrial exploration", movie: "Star Wars" },
-                { name: "Cyberpunk City", duration: "3:36", url: "#", description: "Neon-lit urban future", movie: "Blade Runner" },
-                { name: "Starship Bridge", duration: "4:48", url: "#", description: "Command center atmosphere", movie: "Star Trek" }
+                { name: "Space Station", duration: "9:99", url: "#", description: "Futuristic facility ambience", movie: "Interstellar" },
+                { name: "Alien World", duration: "9:99", url: "#", description: "Extraterrestrial exploration", movie: "Star Wars" },
+                { name: "Cyberpunk City", duration: "9:99", url: "#", description: "Neon-lit urban future", movie: "Blade Runner" },
+                { name: "Starship Bridge", duration: "9:99", url: "#", description: "Command center atmosphere", movie: "Star Trek" }
             ],
             horror: [
-                { name: "Haunted Manor", duration: "3:17", url: "#", description: "Spooky mansion ambience", movie: "The Conjuring" },
-                { name: "Creeping Shadows", duration: "4:02", url: "#", description: "Suspenseful darkness", movie: "Halloween" },
-                { name: "Ancient Curse", duration: "3:55", url: "#", description: "Mystical dread", movie: "The Mummy" },
-                { name: "Whispers in the Dark", duration: "2:28", url: "#", description: "Eerie whispers", movie: "Sinister" }
+                { name: "Haunted Manor", duration: "9:99", url: "#", description: "Spooky mansion ambience", movie: "The Conjuring" },
+                { name: "Creeping Shadows", duration: "9:99", url: "#", description: "Suspenseful darkness", movie: "Halloween" },
+                { name: "Ancient Curse", duration: "9:99", url: "#", description: "Mystical dread", movie: "The Mummy" },
+                { name: "Whispers in the Dark", duration: "9:99", url: "#", description: "Eerie whispers", movie: "Sinister" }
             ],
             adventure: [
-                { name: "Epic Quest", duration: "4:33", url: "#", description: "Heroic journey theme", movie: "Indiana Jones" },
-                { name: "Treasure Hunt", duration: "3:21", url: "#", description: "Exciting exploration", movie: "Pirates of the Caribbean" },
-                { name: "Victory March", duration: "2:56", url: "#", description: "Triumphant celebration", movie: "Gladiator" },
-                { name: "Journey's End", duration: "4:44", url: "#", description: "Peaceful resolution", movie: "The Lord of the Rings" }
+                { name: "Epic Quest", duration: "9:99", url: "#", description: "Heroic journey theme", movie: "Indiana Jones" },
+                { name: "Treasure Hunt", duration: "9:99", url: "#", description: "Exciting exploration", movie: "Pirates of the Caribbean" },
+                { name: "Victory March", duration: "9:99", url: "#", description: "Triumphant celebration", movie: "Gladiator" },
+                { name: "Journey's End", duration: "9:99", url: "#", description: "Peaceful resolution", movie: "The Lord of the Rings" }
             ],
             tavern: [
-                { name: "Merry Gathering", duration: "3:40", url: "#", description: "Festive celebration", movie: "The Princess Bride" },
-                { name: "Bard's Tale", duration: "4:15", url: "#", description: "Storytelling atmosphere", movie: "Robin Hood" },
-                { name: "Drinking Song", duration: "2:33", url: "#", description: "Jovial drinking melody", movie: "Pirates of the Caribbean" },
-                { name: "Late Night Chat", duration: "3:58", url: "#", description: "Quiet tavern ambience", movie: "The Hobbit" }
+                { name: "Merry Gathering", duration: "9:99", url: "#", description: "Festive celebration", movie: "The Princess Bride" },
+                { name: "Bard's Tale", duration: "9:99", url: "#", description: "Storytelling atmosphere", movie: "Robin Hood" },
+                { name: "Drinking Song", duration: "9:99", url: "#", description: "Jovial drinking melody", movie: "Pirates of the Caribbean" },
+                { name: "Late Night Chat", duration: "9:99", url: "#", description: "Quiet tavern ambience", movie: "The Hobbit" }
             ]
         };
         
@@ -64,6 +64,7 @@ class TabletopTunes {
         this.loadUserPreferences();
         this.updateDisplay();
         this.initializeElectronIntegration();
+        this.initializeQuickActions();
     }
     
     // Tab System Management
@@ -692,7 +693,7 @@ class TabletopTunes {
         
         // Add base scores to prevent all zeros
         Object.keys(scores).forEach(key => {
-            if (scores[key] === 0) scores[key] = Math.floor(Math.random() * 30) + 10;
+            if (scores[key] === 0) scores[key] = 99;
         });
         
         return scores;
@@ -831,6 +832,11 @@ class TabletopTunes {
         this.currentTrackIndex = 0;
         this.displayPlaylist();
         this.updateCurrentTrackInfo();
+    }
+    
+    // Load category method for quick actions
+    loadCategory(category) {
+        this.selectCategory(category);
     }
     
     displayPlaylist() {
@@ -1391,7 +1397,7 @@ class TabletopTunes {
         // Add base randomness to prevent all zeros
         Object.keys(scores).forEach(key => {
             if (scores[key] === 0) {
-                scores[key] = Math.floor(Math.random() * 25) + 5;
+                scores[key] = 99;
             }
         });
         
@@ -1550,7 +1556,7 @@ class TabletopTunes {
             // Convert movie tracks to our format
             this.currentPlaylist = suggestion.tracks.map((trackName, index) => ({
                 name: trackName,
-                duration: `${3 + Math.floor(Math.random() * 3)}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`,
+                duration: `9:99`,
                 url: "#",
                 description: `From ${movieName}`,
                 movie: movieName
@@ -1569,7 +1575,7 @@ class TabletopTunes {
         // Create a single track playlist
         this.currentPlaylist = [{
             name: trackName,
-            duration: `${3 + Math.floor(Math.random() * 3)}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`,
+            duration: `9:99`,
             url: "#",
             description: `From ${movieName}`,
             movie: movieName
@@ -1601,6 +1607,144 @@ class TabletopTunes {
                 <span class="track-duration">${track.duration}</span>
             </div>
         `).join('');
+    }
+    
+    // Initialize Quick Actions and Enhanced Features
+    initializeQuickActions() {
+        // Quick random soundtrack button
+        const quickRandomBtn = document.getElementById('quick-random-btn');
+        if (quickRandomBtn) {
+            quickRandomBtn.addEventListener('click', () => this.getRandomSurprise());
+        }
+        
+        // Enhanced volume display
+        const volumeSlider = document.getElementById('volume-slider');
+        if (volumeSlider) {
+            volumeSlider.addEventListener('input', (e) => {
+                const volumeDisplay = document.getElementById('volume-display');
+                volumeDisplay.textContent = `${e.target.value}%`;
+                volumeSlider.title = `Volume: ${e.target.value}%`;
+            });
+        }
+        
+        // Clear playlist button
+        const clearPlaylistBtn = document.getElementById('clear-playlist-btn');
+        if (clearPlaylistBtn) {
+            clearPlaylistBtn.addEventListener('click', () => this.clearCurrentPlaylist());
+        }
+    }
+    
+    // Quick start functionality for different moods
+    quickStart(category) {
+        this.showNotification(`🎵 Starting ${category} soundtrack experience!`);
+        this.loadCategory(category);
+        
+        // Auto-start playing if tracks are available
+        setTimeout(() => {
+            if (this.currentPlaylist.length > 0) {
+                this.play();
+            }
+        }, 500);
+        
+        // Update status
+        this.updatePlaybackStatus(`Playing ${category} soundtrack collection`);
+    }
+    
+    // Random surprise functionality
+    getRandomSurprise() {
+        const categories = ['ambient', 'fantasy', 'scifi', 'horror', 'adventure', 'tavern'];
+        const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+        
+        this.showNotification(`🎲 Surprise! Preparing ${randomCategory} soundtrack...`);
+        this.quickStart(randomCategory);
+        
+        // Shuffle the playlist for more variety
+        setTimeout(() => {
+            this.toggleShuffle();
+        }, 1000);
+    }
+    
+    // Create custom playlist functionality
+    createCustomPlaylist() {
+        this.showNotification('🎨 Creating custom mixed playlist...');
+        
+        // Mix tracks from different categories
+        const categories = ['ambient', 'fantasy', 'scifi', 'horror', 'adventure', 'tavern'];
+        let mixedPlaylist = [];
+        
+        categories.forEach(category => {
+            if (this.soundtracks[category]) {
+                // Add 1-2 tracks from each category
+                const tracksToAdd = this.soundtracks[category].slice(0, 2);
+                mixedPlaylist = mixedPlaylist.concat(tracksToAdd);
+            }
+        });
+        
+        // Shuffle the mixed playlist
+        for (let i = mixedPlaylist.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [mixedPlaylist[i], mixedPlaylist[j]] = [mixedPlaylist[j], mixedPlaylist[i]];
+        }
+        
+        this.currentPlaylist = mixedPlaylist;
+        this.currentTrackIndex = 0;
+        this.currentCategory = 'custom-mix';
+        this.displayPlaylist();
+        this.updateCurrentTrackInfo();
+        document.querySelector('.playlist-section h2').textContent = 'Custom Mixed Playlist';
+        
+        this.updatePlaybackStatus('Custom mixed playlist ready - perfect variety for any game!');
+    }
+    
+    // Enhanced playback status updates
+    updatePlaybackStatus(message) {
+        const statusElement = document.getElementById('playback-status');
+        if (statusElement) {
+            statusElement.querySelector('span').textContent = message;
+            
+            // Add visual feedback
+            statusElement.style.opacity = '0.7';
+            setTimeout(() => {
+                statusElement.style.opacity = '1';
+            }, 200);
+        }
+    }
+    
+    // Enhanced track info display - override the existing method
+    updateCurrentTrackInfo() {
+        const currentTrackElement = document.getElementById('current-track');
+        const currentCategoryElement = document.getElementById('current-category');
+        const trackMovieElement = document.getElementById('track-movie');
+        const trackDescriptionElement = document.getElementById('track-description');
+        
+        if (this.currentPlaylist.length > 0 && this.currentTrackIndex < this.currentPlaylist.length) {
+            const track = this.currentPlaylist[this.currentTrackIndex];
+            currentTrackElement.textContent = track.name;
+            currentCategoryElement.textContent = `Track ${this.currentTrackIndex + 1} of ${this.currentPlaylist.length}`;
+            
+            if (trackMovieElement) {
+                trackMovieElement.textContent = track.movie || '';
+                trackMovieElement.style.display = track.movie ? 'inline' : 'none';
+            }
+            
+            if (trackDescriptionElement) {
+                trackDescriptionElement.textContent = track.description || '';
+                trackDescriptionElement.style.display = track.description ? 'inline' : 'none';
+            }
+            
+            document.getElementById('duration').textContent = track.duration || '9:99';
+            
+            this.updatePlaybackStatus(`Now playing: ${track.name} from ${track.movie}`);
+        } else {
+            currentTrackElement.textContent = 'No track selected';
+            currentCategoryElement.textContent = 'Select a soundtrack category';
+            
+            if (trackMovieElement) trackMovieElement.style.display = 'none';
+            if (trackDescriptionElement) trackDescriptionElement.style.display = 'none';
+            
+            document.getElementById('duration').textContent = '0:00';
+            this.updatePlaybackStatus('Ready to play your perfect soundtrack');
+        }
     }
 }
 

@@ -1,5 +1,5 @@
 // Service Worker for TabletopTunes PWA
-const CACHE_NAME = 'tabletop-tunes-v1.0.0';
+const CACHE_NAME = 'tabletop-tunes-v1.0.1';
 const STATIC_CACHE_URLS = [
   '/',
   '/index.html',
@@ -49,50 +49,74 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Handle navigation requests
+  // Handle navigation requests - Network First for fresh content
   if (request.mode === 'navigate') {
     event.respondWith(
-      caches.match('/')
-        .then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          return fetch(request);
+      fetch(request)
+        .then((response) => {
+          // Cache the fresh response
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME)
+            .then((cache) => {
+              cache.put(request, responseClone);
+            });
+          return response;
         })
         .catch(() => {
+          // Fallback to cache if network fails
           return caches.match('/');
         })
     );
     return;
   }
 
-  // Handle static resources with Cache First strategy
+  // Handle static resources with smarter caching strategy
   if (STATIC_CACHE_URLS.some(cachedUrl => request.url.includes(cachedUrl.replace('/', '')))) {
-    event.respondWith(
-      caches.match(request)
-        .then((cachedResponse) => {
-          if (cachedResponse) {
-            console.log('[SW] Serving from cache:', request.url);
-            return cachedResponse;
-          }
-          
-          console.log('[SW] Fetching and caching:', request.url);
-          return fetch(request)
-            .then((response) => {
-              const responseClone = response.clone();
-              caches.open(CACHE_NAME)
-                .then((cache) => {
-                  cache.put(request, responseClone);
-                });
-              return response;
-            });
-        })
-        .catch((error) => {
-          console.error('[SW] Fetch failed:', error);
-          // Return offline fallback if available
-          return caches.match('/');
-        })
-    );
+    // Use Network First for HTML files to avoid stale content
+    if (request.url.includes('index.html') || request.url.endsWith('/')) {
+      event.respondWith(
+        fetch(request)
+          .then((response) => {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(request, responseClone);
+              });
+            return response;
+          })
+          .catch(() => {
+            console.log('[SW] Network failed, serving from cache:', request.url);
+            return caches.match(request);
+          })
+      );
+    } else {
+      // Use Cache First for CSS, JS, and other static assets
+      event.respondWith(
+        caches.match(request)
+          .then((cachedResponse) => {
+            if (cachedResponse) {
+              console.log('[SW] Serving from cache:', request.url);
+              return cachedResponse;
+            }
+            
+            console.log('[SW] Fetching and caching:', request.url);
+            return fetch(request)
+              .then((response) => {
+                const responseClone = response.clone();
+                caches.open(CACHE_NAME)
+                  .then((cache) => {
+                    cache.put(request, responseClone);
+                  });
+                return response;
+              });
+          })
+          .catch((error) => {
+            console.error('[SW] Fetch failed:', error);
+            // Return offline fallback if available
+            return caches.match('/');
+          })
+      );
+    }
     return;
   }
 

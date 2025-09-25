@@ -58,6 +58,7 @@
                 <div class="search-container">
                     <input type="text" id="game-search" placeholder="Enter your board game name (e.g., Gloomhaven, Catan, Pandemic...)">
                     <button id="search-game-btn" class="search-btn"><i class="fas fa-search"></i> Find Soundtracks</button>
+                    <button id="quick-random-btn" class="quick-btn" title="Get random soundtrack suggestion"><i class="fas fa-dice"></i> Surprise Me!</button>
                 </div>
                 <div class="popular-games">
                     <h3>Popular Games:</h3>
@@ -70,6 +71,29 @@
                         <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Ticket to Ride')">Ticket to Ride</span>
                     </div>
                 </div>
+                
+                <!-- Quick Start Actions -->
+                <div class="quick-actions">
+                    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="tabletopTunes.quickStart('ambient')">
+                            <i class="fas fa-leaf"></i>
+                            <span>Start Ambient</span>
+                        </button>
+                        <button class="action-btn" onclick="tabletopTunes.quickStart('fantasy')">
+                            <i class="fas fa-dragon"></i>
+                            <span>Epic Fantasy</span>
+                        </button>
+                        <button class="action-btn" onclick="tabletopTunes.quickStart('horror')">
+                            <i class="fas fa-ghost"></i>
+                            <span>Horror Night</span>
+                        </button>
+                        <button class="action-btn" onclick="tabletopTunes.createCustomPlaylist()">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Custom Mix</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="player-section">
@@ -77,6 +101,10 @@
                     <div class="track-info">
                         <h3 id="current-track">No track selected</h3>
                         <p id="current-category">Select a soundtrack category</p>
+                        <div class="track-meta">
+                            <span id="track-movie" class="movie-tag"></span>
+                            <span id="track-description" class="description-tag"></span>
+                        </div>
                     </div>
                     <div class="progress-container">
                         <div class="progress-bar">
@@ -90,17 +118,24 @@
                 </div>
 
                 <div class="controls">
-                    <button id="prev-btn" class="control-btn"><i class="fas fa-step-backward"></i></button>
-                    <button id="play-pause-btn" class="control-btn primary"><i class="fas fa-play"></i></button>
-                    <button id="next-btn" class="control-btn"><i class="fas fa-step-forward"></i></button>
-                    <button id="shuffle-btn" class="control-btn"><i class="fas fa-random"></i></button>
-                    <button id="loop-btn" class="control-btn"><i class="fas fa-redo"></i></button>
+                    <button id="prev-btn" class="control-btn" title="Previous track"><i class="fas fa-step-backward"></i></button>
+                    <button id="play-pause-btn" class="control-btn primary" title="Play/Pause"><i class="fas fa-play"></i></button>
+                    <button id="next-btn" class="control-btn" title="Next track"><i class="fas fa-step-forward"></i></button>
+                    <button id="shuffle-btn" class="control-btn" title="Shuffle playlist"><i class="fas fa-random"></i></button>
+                    <button id="loop-btn" class="control-btn" title="Loop playlist"><i class="fas fa-redo"></i></button>
+                    <button id="clear-playlist-btn" class="control-btn danger" title="Clear current playlist"><i class="fas fa-trash"></i></button>
                 </div>
 
                 <div class="volume-control">
                     <i class="fas fa-volume-up"></i>
-                    <input type="range" id="volume-slider" min="0" max="100" value="70">
-                    <span id="volume-display">70%</span>
+                    <input type="range" id="volume-slider" min="0" max="100" value="99" title="Volume: 99%">
+                    <span id="volume-display">99%</span>
+                </div>
+                
+                <!-- Playback Status -->
+                <div class="playback-status" id="playback-status">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Ready to play your perfect soundtrack</span>
                 </div>
             </div>
 
