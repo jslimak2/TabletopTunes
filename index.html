@@ -97,92 +97,100 @@
                     </div>
                 </div>
 
-                <!-- Player Section (more prominent) -->
-                <div class="player-section enhanced">
-                    <div class="now-playing-card">
-                        <div class="track-info">
-                            <h3 id="current-track">No track selected</h3>
-                            <p id="current-category">Select a soundtrack category</p>
-                            <div class="track-meta">
-                                <span id="track-movie" class="movie-tag"></span>
-                                <span id="track-description" class="description-tag"></span>
+                <!-- Enhanced Player Section -->
+                <div class="player-section">
+                    <div class="track-info">
+                        <h3 id="current-track">No track selected</h3>
+                        <p id="current-category">Select a soundtrack category</p>
+                        <div class="track-meta">
+                            <span id="track-movie" class="movie-tag" style="display: none;"></span>
+                            <span id="track-description" class="description-tag" style="display: none;"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="player-controls">
+                        <div class="playback-controls">
+                            <button id="prev-btn" class="control-btn" title="Previous track">
+                                <i class="fas fa-step-backward"></i>
+                            </button>
+                            <button id="play-pause-btn" class="control-btn primary" title="Play/Pause">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button id="next-btn" class="control-btn" title="Next track">
+                                <i class="fas fa-step-forward"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="secondary-controls">
+                            <button id="shuffle-btn" class="control-btn" title="Shuffle playlist">
+                                <i class="fas fa-random"></i>
+                            </button>
+                            <button id="loop-btn" class="control-btn" title="Loop playlist">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                            <div class="volume-control">
+                                <i class="fas fa-volume-up"></i>
+                                <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="70" title="Volume: 70%">
+                                <span id="volume-display" class="volume-display">70%</span>
                             </div>
                         </div>
                         
-                        <div class="player-controls-row">
-                            <div class="playback-controls">
-                                <button id="prev-btn" class="control-btn" title="Previous track"><i class="fas fa-step-backward"></i></button>
-                                <button id="play-pause-btn" class="control-btn primary" title="Play/Pause"><i class="fas fa-play"></i></button>
-                                <button id="next-btn" class="control-btn" title="Next track"><i class="fas fa-step-forward"></i></button>
-                            </div>
-                            
-                            <div class="secondary-controls">
-                                <button id="shuffle-btn" class="control-btn secondary" title="Shuffle playlist"><i class="fas fa-random"></i></button>
-                                <button id="loop-btn" class="control-btn secondary" title="Loop playlist"><i class="fas fa-redo"></i></button>
-                                <div class="volume-control inline">
-                                    <i class="fas fa-volume-up"></i>
-                                    <input type="range" id="volume-slider" min="0" max="100" value="99" title="Volume: 99%">
-                                    <span id="volume-display">99%</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="progress-container">
+                        <div class="progress-section">
+                            <div class="time-display" id="current-time">0:00</div>
                             <div class="progress-bar">
-                                <div class="progress" id="progress"></div>
+                                <div class="progress-fill" id="progress"></div>
                             </div>
-                            <div class="time-display">
-                                <span id="current-time">0:00</span>
-                                <span id="duration">0:00</span>
-                            </div>
+                            <div class="time-display" id="duration">0:00</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Simplified Categories Grid -->
-                <div class="categories-section compact">
+                <!-- Enhanced Categories Section -->
+                <div class="categories-section">
                     <h3>Browse by Mood</h3>
-                    <div class="categories-grid-compact">
-                        <div class="category-card compact" data-category="ambient">
-                            <i class="fas fa-leaf"></i>
-                            <span>Ambient</span>
+                    <div class="category-grid">
+                        <div class="category-card" data-category="ambient">
+                            <h4><i class="fas fa-leaf"></i> Ambient</h4>
+                            <p>Peaceful and atmospheric soundscapes for relaxed gameplay</p>
                         </div>
-                        <div class="category-card compact" data-category="fantasy">
-                            <i class="fas fa-dragon"></i>
-                            <span>Fantasy</span>
+                        <div class="category-card" data-category="fantasy">
+                            <h4><i class="fas fa-dragon"></i> Fantasy</h4>
+                            <p>Epic orchestral themes for medieval and magical adventures</p>
                         </div>
-                        <div class="category-card compact" data-category="scifi">
-                            <i class="fas fa-rocket"></i>
-                            <span>Sci-Fi</span>
+                        <div class="category-card" data-category="scifi">
+                            <h4><i class="fas fa-rocket"></i> Sci-Fi</h4>
+                            <p>Futuristic electronic sounds for space and technology themes</p>
                         </div>
-                        <div class="category-card compact" data-category="horror">
-                            <i class="fas fa-ghost"></i>
-                            <span>Horror</span>
+                        <div class="category-card" data-category="horror">
+                            <h4><i class="fas fa-ghost"></i> Horror</h4>
+                            <p>Suspenseful and eerie music for scary game sessions</p>
                         </div>
-                        <div class="category-card compact" data-category="adventure">
-                            <i class="fas fa-compass"></i>
-                            <span>Adventure</span>
+                        <div class="category-card" data-category="adventure">
+                            <h4><i class="fas fa-compass"></i> Adventure</h4>
+                            <p>Dynamic and exciting themes for exploration games</p>
                         </div>
-                        <div class="category-card compact" data-category="tavern">
-                            <i class="fas fa-beer"></i>
-                            <span>Tavern</span>
+                        <div class="category-card" data-category="tavern">
+                            <h4><i class="fas fa-beer"></i> Tavern</h4>
+                            <p>Jovial and social music for gathering and celebration</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Streamlined Playlist Section -->
-                <div class="playlist-section compact">
+                <!-- Enhanced Playlist Section -->
+                <div class="playlist-section">
                     <div class="playlist-header">
                         <h3>Current Playlist</h3>
-                        <div class="playlist-actions">
+                        <div class="playlist-controls">
                             <input type="text" id="playlist-name" placeholder="Playlist name">
-                            <button id="save-playlist" class="action-btn primary">Save</button>
-                            <button id="load-playlist" class="action-btn secondary">Load</button>
-                            <button id="clear-playlist-btn" class="action-btn danger" title="Clear current playlist"><i class="fas fa-trash"></i></button>
+                            <button id="save-playlist" class="primary">Save</button>
+                            <button id="load-playlist" class="secondary">Load</button>
+                            <button id="clear-playlist-btn" class="danger" title="Clear current playlist">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="track-list" id="track-list">
-                        <p class="empty-playlist">Search for a game above or select a mood to get started</p>
+                    <div class="playlist-content" id="track-list">
+                        <p>Enter a board game name above or select a soundtrack category</p>
                     </div>
                 </div>
             </div>
