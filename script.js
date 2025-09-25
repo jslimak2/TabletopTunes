@@ -119,11 +119,25 @@ class TabletopTunes {
     
     async connectSpotify() {
         try {
-            // In a real implementation, this would use proper OAuth2 flow
-            // For demo purposes, we'll simulate the connection
+            // Enhanced Spotify OAuth2 flow simulation
             const clientId = 'your-spotify-client-id'; // This would be your actual client ID
             const redirectUri = encodeURIComponent(window.location.origin);
-            const scopes = encodeURIComponent('streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state');
+            const scopes = encodeURIComponent('streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state playlist-modify-public playlist-modify-private');
+            
+            // Show connection progress
+            const statusDiv = document.getElementById('spotify-status');
+            if (statusDiv) {
+                statusDiv.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
+                        <p>Connecting to Spotify...</p>
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">Requesting permissions for streaming and playlist access</p>
+                    </div>
+                `;
+            }
+            
+            // Simulate OAuth process delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
             // For demo, we'll simulate a successful connection
             this.simulateSpotifyConnection();
@@ -131,13 +145,26 @@ class TabletopTunes {
         } catch (error) {
             console.error('Spotify connection failed:', error);
             this.showNotification('Failed to connect to Spotify. Please try again.');
+            
+            // Reset UI on error
+            const statusDiv = document.getElementById('spotify-status');
+            if (statusDiv) {
+                statusDiv.innerHTML = `
+                    <p>Connect your Spotify account to access your music library and get personalized recommendations.</p>
+                    <button id="spotify-login-btn" class="spotify-btn">
+                        <i class="fab fa-spotify"></i> Connect Spotify
+                    </button>
+                `;
+                // Re-attach event listener
+                document.getElementById('spotify-login-btn').addEventListener('click', () => this.connectSpotify());
+            }
         }
     }
     
     simulateSpotifyConnection() {
         // Simulate successful Spotify connection for demo
         this.isSpotifyConnected = true;
-        this.spotifyAccessToken = 'demo-token';
+        this.spotifyAccessToken = 'demo-token-' + Date.now();
         
         // Update UI
         const statusDiv = document.getElementById('spotify-status');
@@ -147,24 +174,102 @@ class TabletopTunes {
             statusDiv.style.display = 'none';
             contentDiv.style.display = 'block';
             
-            // Show user profile
+            // Show enhanced user profile
             const profileDiv = document.getElementById('user-profile');
             if (profileDiv) {
                 profileDiv.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg);">
-                        <div style="width: 50px; height: 50px; background: var(--spotify-green); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                            <i class="fab fa-spotify" style="color: white; font-size: 1.5rem;"></i>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding: 1.5rem; background: linear-gradient(135deg, var(--spotify-green), #1ed760); border-radius: var(--radius-lg); color: white;">
+                        <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+                            <i class="fab fa-spotify" style="color: white; font-size: 1.8rem;"></i>
                         </div>
-                        <div>
-                            <h4 style="color: var(--text-primary); margin-bottom: 0.25rem;">Connected to Spotify</h4>
-                            <p style="color: var(--text-secondary); margin: 0;">Demo User - Premium Account</p>
+                        <div style="flex: 1;">
+                            <h4 style="color: white; margin-bottom: 0.25rem; font-size: 1.1rem;">Connected to Spotify Premium</h4>
+                            <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 0.9rem;">TabletopTunes Demo User</p>
+                            <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.8rem; color: rgba(255,255,255,0.8);">
+                                <span><i class="fas fa-music"></i> 2,847 tracks</span>
+                                <span><i class="fas fa-list"></i> 23 playlists</span>
+                                <span><i class="fas fa-heart"></i> 156 liked</span>
+                            </div>
                         </div>
+                        <button onclick="tabletopTunes.disconnectSpotify()" style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: var(--radius-md); color: white; cursor: pointer; backdrop-filter: blur(10px);">
+                            <i class="fas fa-sign-out-alt"></i> Disconnect
+                        </button>
                     </div>
                 `;
             }
+            
+            // Add game-specific recommendations
+            this.updateSpotifyRecommendations();
         }
         
-        this.showNotification('Successfully connected to Spotify!');
+        this.showNotification('Successfully connected to Spotify Premium!');
+    }
+
+    disconnectSpotify() {
+        this.isSpotifyConnected = false;
+        this.spotifyAccessToken = null;
+        
+        const statusDiv = document.getElementById('spotify-status');
+        const contentDiv = document.getElementById('spotify-content');
+        
+        if (statusDiv && contentDiv) {
+            statusDiv.style.display = 'block';
+            contentDiv.style.display = 'none';
+            
+            // Reset status div content
+            statusDiv.innerHTML = `
+                <p>Connect your Spotify account to access your music library and get personalized recommendations.</p>
+                <button id="spotify-login-btn" class="spotify-btn">
+                    <i class="fab fa-spotify"></i> Connect Spotify
+                </button>
+            `;
+            
+            // Re-attach event listener
+            document.getElementById('spotify-login-btn').addEventListener('click', () => this.connectSpotify());
+        }
+        
+        this.showNotification('Disconnected from Spotify');
+    }
+
+    updateSpotifyRecommendations() {
+        const recommendationsDiv = document.getElementById('game-recommendations');
+        if (!recommendationsDiv) return;
+        
+        const currentGame = this.currentBoardGame || 'your selected board game';
+        
+        recommendationsDiv.innerHTML = `
+            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg); border-left: 4px solid var(--spotify-green);">
+                <h4 style="color: var(--spotify-green); margin-bottom: 1rem;">
+                    <i class="fas fa-magic"></i> AI-Powered Recommendations for ${currentGame}
+                </h4>
+                <div class="spotify-recommendations-list">
+                    <div class="recommendation-item" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg-card); border-radius: var(--radius-md); margin-bottom: 0.5rem;">
+                        <img src="data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='40' height='40' fill='%234ecdc4'/%3E%3C/svg%3E" style="width: 40px; height: 40px; border-radius: var(--radius-sm);" alt="Album">
+                        <div style="flex: 1;">
+                            <div style="color: var(--text-primary); font-weight: 500;">Epic Orchestral Mix</div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Based on your game theme • 94% match</div>
+                        </div>
+                        <button onclick="tabletopTunes.playRecommendation('epic-mix')" style="padding: 0.5rem 1rem; background: var(--spotify-green); border: none; border-radius: var(--radius-md); color: white; cursor: pointer;">
+                            <i class="fas fa-play"></i> Play
+                        </button>
+                    </div>
+                    <div class="recommendation-item" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg-card); border-radius: var(--radius-md); margin-bottom: 0.5rem;">
+                        <img src="data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='40' height='40' fill='%23ff6b6b'/%3E%3C/svg%3E" style="width: 40px; height: 40px; border-radius: var(--radius-sm);" alt="Album">
+                        <div style="flex: 1;">
+                            <div style="color: var(--text-primary); font-weight: 500;">Cinematic Soundscapes</div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Curated movie themes • 89% match</div>
+                        </div>
+                        <button onclick="tabletopTunes.playRecommendation('cinematic')" style="padding: 0.5rem 1rem; background: var(--spotify-green); border: none; border-radius: var(--radius-md); color: white; cursor: pointer;">
+                            <i class="fas fa-play"></i> Play
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    playRecommendation(type) {
+        this.showNotification(`Playing ${type} recommendation from Spotify!`);
     }
     
     async searchSpotify() {
@@ -176,14 +281,68 @@ class TabletopTunes {
             return;
         }
         
-        // Simulate Spotify search results
-        const mockResults = [
-            { name: 'Epic Fantasy Adventure', artist: 'Movie Soundtrack', album: 'Lord of the Rings', id: '1' },
-            { name: 'Mystical Journey', artist: 'Orchestral', album: 'Fantasy Collection', id: '2' },
-            { name: 'Dragon\'s Theme', artist: 'Epic Music', album: 'Heroic Tales', id: '3' }
-        ];
+        if (!this.isSpotifyConnected) {
+            this.showNotification('Please connect to Spotify first');
+            return;
+        }
+        
+        // Show loading state
+        const resultsDiv = document.getElementById('spotify-results');
+        if (resultsDiv) {
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
+                    <p>Searching Spotify for "${query}"...</p>
+                </div>
+            `;
+        }
+        
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Enhanced mock results based on search query
+        const mockResults = this.generateSmartSearchResults(query);
         
         this.displaySpotifyResults(mockResults);
+    }
+
+    generateSmartSearchResults(query) {
+        const lowerQuery = query.toLowerCase();
+        let results = [];
+        
+        // Generate contextual results based on search terms
+        if (lowerQuery.includes('fantasy') || lowerQuery.includes('epic') || lowerQuery.includes('orchestral')) {
+            results = [
+                { name: 'The Bridge of Khazad Dum', artist: 'Howard Shore', album: 'Lord of the Rings: Fellowship', id: 'fantasy1', duration: '5:57', popularity: 95 },
+                { name: 'Duel of the Fates', artist: 'John Williams', album: 'Star Wars: Phantom Menace', id: 'fantasy2', duration: '4:14', popularity: 92 },
+                { name: 'Now We Are Free', artist: 'Hans Zimmer', album: 'Gladiator Soundtrack', id: 'fantasy3', duration: '4:18', popularity: 89 },
+                { name: 'Heart of Courage', artist: 'Two Steps From Hell', album: 'Invincible', id: 'fantasy4', duration: '2:51', popularity: 87 }
+            ];
+        } else if (lowerQuery.includes('horror') || lowerQuery.includes('scary') || lowerQuery.includes('dark')) {
+            results = [
+                { name: 'Halloween Theme', artist: 'John Carpenter', album: 'Halloween Soundtrack', id: 'horror1', duration: '2:36', popularity: 94 },
+                { name: 'The Exorcist Theme', artist: 'Mike Oldfield', album: 'Tubular Bells', id: 'horror2', duration: '4:21', popularity: 91 },
+                { name: 'Psycho Strings', artist: 'Bernard Herrmann', album: 'Psycho Soundtrack', id: 'horror3', duration: '2:44', popularity: 88 },
+                { name: 'The Shining Main Title', artist: 'Wendy Carlos', album: 'The Shining Soundtrack', id: 'horror4', duration: '3:08', popularity: 86 }
+            ];
+        } else if (lowerQuery.includes('ambient') || lowerQuery.includes('peaceful') || lowerQuery.includes('calm')) {
+            results = [
+                { name: 'Samsara', artist: 'Audiomachine', album: 'Chronicles', id: 'ambient1', duration: '3:45', popularity: 85 },
+                { name: 'Weightless', artist: 'Marconi Union', album: 'Distance', id: 'ambient2', duration: '8:10', popularity: 82 },
+                { name: 'The Path of the Wind', artist: 'Joe Hisaishi', album: 'My Neighbor Totoro', id: 'ambient3', duration: '5:23', popularity: 90 },
+                { name: 'River Flows in You', artist: 'Yiruma', album: 'First Love', id: 'ambient4', duration: '3:20', popularity: 87 }
+            ];
+        } else {
+            // Default results for any other query
+            results = [
+                { name: `${query} Epic Version`, artist: 'Movie Soundtracks', album: 'Cinematic Collection', id: `search1_${Date.now()}`, duration: '4:23', popularity: 88 },
+                { name: `${query} Orchestral Mix`, artist: 'Epic Music World', album: 'Heroic Tales', id: `search2_${Date.now()}`, duration: '3:45', popularity: 85 },
+                { name: `${query} Theme`, artist: 'Soundtrack Artists', album: 'Game Music Collection', id: `search3_${Date.now()}`, duration: '2:56', popularity: 82 },
+                { name: `${query} Instrumental`, artist: 'Cinematic Music', album: 'Background Scores', id: `search4_${Date.now()}`, duration: '5:12', popularity: 79 }
+            ];
+        }
+        
+        return results;
     }
     
     displaySpotifyResults(results) {
@@ -191,25 +350,80 @@ class TabletopTunes {
         if (!resultsDiv) return;
         
         resultsDiv.innerHTML = `
-            <h3 style="color: var(--text-primary); margin-bottom: 1rem;">Search Results</h3>
-            <div class="spotify-tracks">
-                ${results.map(track => `
-                    <div class="spotify-track" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md); margin-bottom: 0.5rem; cursor: pointer;">
-                        <div>
-                            <div style="color: var(--text-primary); font-weight: 500;">${track.name}</div>
-                            <div style="color: var(--text-secondary); font-size: 0.9rem;">${track.artist} - ${track.album}</div>
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">
+                    <i class="fab fa-spotify" style="color: var(--spotify-green);"></i> Search Results
+                </h3>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">Found ${results.length} tracks matching your search</p>
+            </div>
+            <div class="spotify-tracks" style="max-height: 400px; overflow-y: auto;">
+                ${results.map((track, index) => `
+                    <div class="spotify-track" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md); margin-bottom: 0.75rem; border: 1px solid var(--gray-700); transition: all 0.2s ease; cursor: pointer;" 
+                         onmouseover="this.style.background='var(--bg-card)'; this.style.borderColor='var(--spotify-green)'"
+                         onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='var(--gray-700)'">
+                        
+                        <!-- Album Art Placeholder -->
+                        <div style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.8rem;">
+                            ${track.name.substring(0, 2).toUpperCase()}
                         </div>
-                        <button onclick="tabletopTunes.addSpotifyTrack('${track.id}')" style="padding: 0.5rem 1rem; background: var(--spotify-green); border: none; border-radius: var(--radius-md); color: white; cursor: pointer;">
-                            Add to Playlist
-                        </button>
+                        
+                        <!-- Track Info -->
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="color: var(--text-primary); font-weight: 500; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ${track.name}
+                            </div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.25rem;">
+                                ${track.artist} • ${track.album}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+                                <span><i class="fas fa-clock"></i> ${track.duration}</span>
+                                ${track.popularity ? `<span><i class="fas fa-chart-line"></i> ${track.popularity}% popular</span>` : ''}
+                                <span style="background: var(--spotify-green); color: white; padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.7rem;">
+                                    <i class="fab fa-spotify"></i> SPOTIFY
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+                            <button onclick="event.stopPropagation(); tabletopTunes.previewSpotifyTrack('${track.id}')" 
+                                    style="padding: 0.5rem; background: var(--bg-card); border: 1px solid var(--gray-600); border-radius: var(--radius-sm); color: var(--text-secondary); cursor: pointer; transition: all 0.2s ease;"
+                                    onmouseover="this.style.background='var(--primary-color)'; this.style.color='white'; this.style.borderColor='var(--primary-color)'"
+                                    onmouseout="this.style.background='var(--bg-card)'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--gray-600)'">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); tabletopTunes.addSpotifyTrack('${track.id}', '${track.name.replace(/'/g, "\\'")}', '${track.artist.replace(/'/g, "\\'")}')" 
+                                    style="padding: 0.5rem 1rem; background: var(--spotify-green); border: none; border-radius: var(--radius-sm); color: white; cursor: pointer; font-weight: 500; transition: all 0.2s ease;"
+                                    onmouseover="this.style.background='#1db954'; this.style.transform='translateY(-1px)'"
+                                    onmouseout="this.style.background='var(--spotify-green)'; this.style.transform='translateY(0)'">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
                     </div>
                 `).join('')}
             </div>
         `;
     }
-    
-    addSpotifyTrack(trackId) {
-        this.showNotification('Track added to playlist!');
+
+    previewSpotifyTrack(trackId) {
+        this.showNotification('🎵 Playing 30-second preview...');
+        // In a real implementation, this would play a preview using Spotify's Web Playback SDK
+    }
+
+    addSpotifyTrack(trackId, trackName, artist) {
+        // Add track to current playlist
+        const newTrack = {
+            name: trackName || 'Unknown Track',
+            artist: artist || 'Unknown Artist',
+            duration: '3:45', // Would get real duration from Spotify API
+            url: '#',
+            source: 'spotify',
+            spotifyId: trackId
+        };
+        
+        this.currentPlaylist.push(newTrack);
+        this.displayPlaylist();
+        this.showNotification(`✅ "${trackName}" added to your playlist!`);
     }
     
     // Visualization System
@@ -335,25 +549,109 @@ class TabletopTunes {
         const scoreBars = document.getElementById('score-bars');
         if (!scoreBars) return;
         
-        // Calculate scores using existing logic
-        const result = this.suggestByTheme(gameName);
-        const scores = this.calculateAllCategoryScores(gameName);
+        // Use the enhanced recommendation system
+        const recommendation = this.suggestByTheme(gameName);
+        const scores = recommendation ? recommendation.scoringBreakdown : this.calculateAllCategoryScores(gameName);
         
         scoreBars.innerHTML = '';
         
-        Object.entries(scores).forEach(([category, score], index) => {
+        // Sort scores by value for better visualization
+        const sortedScores = Object.entries(scores).sort(([,a], [,b]) => b - a);
+        
+        sortedScores.forEach(([category, score], index) => {
             setTimeout(() => {
                 const barDiv = document.createElement('div');
-                barDiv.className = 'score-bar';
+                barDiv.className = `score-bar ${recommendation && category === recommendation.category ? 'winner' : ''}`;
                 barDiv.innerHTML = `
-                    <div class="bar-label">${category}</div>
+                    <div class="bar-label">${category.charAt(0).toUpperCase() + category.slice(1)}</div>
                     <div class="bar-fill">
-                        <div class="bar-progress" style="width: ${score}%"></div>
+                        <div class="bar-progress" style="width: ${score}%; background: ${this.getCategoryColor(category)}"></div>
                     </div>
                     <div class="bar-score">${score}%</div>
                 `;
                 scoreBars.appendChild(barDiv);
             }, index * 300);
+        });
+    }
+
+    getCategoryColor(category) {
+        const colors = {
+            fantasy: 'linear-gradient(90deg, #8b5cf6, #a855f7)',
+            horror: 'linear-gradient(90deg, #ef4444, #dc2626)', 
+            scifi: 'linear-gradient(90deg, #06b6d4, #0891b2)',
+            adventure: 'linear-gradient(90deg, #f59e0b, #d97706)',
+            ambient: 'linear-gradient(90deg, #10b981, #059669)',
+            tavern: 'linear-gradient(90deg, #f97316, #ea580c)'
+        };
+        return colors[category] || 'linear-gradient(90deg, var(--primary-color), var(--secondary-color))';
+    }
+
+    async showFinalRecommendation(gameName) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const resultDisplay = document.getElementById('result-display');
+        if (!resultDisplay) return;
+        
+        const result = this.suggestByTheme(gameName);
+        
+        if (result) {
+            resultDisplay.innerHTML = `
+                <div class="recommendation-card enhanced-viz-card">
+                    <div class="recommendation-header">
+                        <div class="category-badge ${result.category}">
+                            <i class="fas fa-${this.getCategoryIcon(result.category)}"></i>
+                            ${result.category.charAt(0).toUpperCase() + result.category.slice(1)} Category Selected
+                        </div>
+                        <div class="confidence-score">
+                            <span class="confidence-value">${result.confidence || 'N/A'}% Match</span>
+                        </div>
+                    </div>
+                    <p class="recommendation-reason">${result.reason}</p>
+                    <div class="recommendation-details">
+                        ${result.detectedKeywords && result.detectedKeywords.length > 0 ? `
+                            <div class="detected-elements">
+                                <strong>Key Elements:</strong> 
+                                ${result.detectedKeywords.slice(0, 4).map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                        <div class="tracks-available">
+                            <i class="fas fa-music"></i> ${result.tracks.length} tracks available in this category
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            resultDisplay.innerHTML = `
+                <div class="recommendation-card">
+                    <h4>Analysis Complete</h4>
+                    <p>Unable to find a specific match. Try browsing categories or popular games for suggestions.</p>
+                </div>
+            `;
+        }
+    }
+
+    async showKeywordAnalysis(gameName) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const keywordCloud = document.getElementById('keyword-cloud');
+        if (!keywordCloud) return;
+        
+        // Use enhanced keyword extraction
+        const recommendation = this.suggestByTheme(gameName);
+        const keywords = recommendation ? 
+            (recommendation.detectedKeywords || recommendation.detectedThemes || this.extractAdvancedKeywords(gameName.toLowerCase())) :
+            this.extractKeywords(gameName);
+        
+        keywordCloud.innerHTML = '';
+        
+        keywords.slice(0, 8).forEach((keyword, index) => {
+            setTimeout(() => {
+                const keywordTag = document.createElement('div');
+                keywordTag.className = 'keyword-tag enhanced-keyword';
+                keywordTag.textContent = keyword;
+                keywordTag.style.animationDelay = `${index * 0.1}s`;
+                keywordCloud.appendChild(keywordTag);
+            }, index * 200);
         });
     }
     
@@ -918,80 +1216,326 @@ class TabletopTunes {
     }
 
     suggestByTheme(input) {
-        const themes = input.toLowerCase().split(' ');
-        const suggestions = [];
+        const normalizedInput = input.toLowerCase().trim();
         
-        // Simple keyword matching for themes
+        // First, check if we have specific game data
+        const gameData = this.getGameFromDatabase(normalizedInput);
+        if (gameData) {
+            return this.processGameData(gameData, input);
+        }
+        
+        // Fallback to advanced theme analysis
+        return this.analyzeThemeKeywords(normalizedInput, input);
+    }
+
+    getGameFromDatabase(gameName) {
+        // Check exact matches first
+        if (window.BOARD_GAMES_DATABASE && window.BOARD_GAMES_DATABASE[gameName]) {
+            return window.BOARD_GAMES_DATABASE[gameName];
+        }
+        
+        // Check partial matches
+        const gameKeys = Object.keys(window.BOARD_GAMES_DATABASE || {});
+        const match = gameKeys.find(key => 
+            key.toLowerCase().includes(gameName) || 
+            gameName.includes(key.toLowerCase())
+        );
+        
+        return match ? window.BOARD_GAMES_DATABASE[match] : null;
+    }
+
+    processGameData(gameData, originalInput) {
+        const scores = this.calculateDetailedScores(gameData.themes, originalInput);
+        const bestCategory = this.selectBestCategory(scores);
+        
+        return {
+            category: bestCategory.name,
+            reason: `Perfect match! "${originalInput}" themes: ${gameData.themes.join(', ')}`,
+            tracks: this.soundtracks[bestCategory.name] || [],
+            confidence: bestCategory.score,
+            gameData: gameData,
+            detectedThemes: gameData.themes,
+            scoringBreakdown: scores
+        };
+    }
+
+    analyzeThemeKeywords(normalizedInput, originalInput) {
+        const themes = normalizedInput.split(' ');
+        const allKeywords = this.extractAdvancedKeywords(normalizedInput);
+        const scores = this.calculateKeywordScores(allKeywords, normalizedInput);
+        const bestCategory = this.selectBestCategory(scores);
+        
+        if (bestCategory.score === 0) {
+            return this.getDefaultRecommendation(originalInput);
+        }
+        
+        return {
+            category: bestCategory.name,
+            reason: `Theme analysis detected: ${allKeywords.slice(0, 3).join(', ')} (${bestCategory.score}% match)`,
+            tracks: this.soundtracks[bestCategory.name] || [],
+            confidence: bestCategory.score,
+            detectedKeywords: allKeywords,
+            scoringBreakdown: scores
+        };
+    }
+
+    extractAdvancedKeywords(input) {
+        const commonWords = ['the', 'of', 'and', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'will', 'would', 'could', 'should'];
+        const words = input.toLowerCase().split(/\s+/).filter(word => 
+            word.length > 2 && !commonWords.includes(word)
+        );
+        
+        // Enhanced keyword extraction with synonym mapping
+        const keywordMappings = {
+            // Fantasy synonyms
+            'magic': ['magical', 'wizard', 'sorcery', 'spell', 'enchanted', 'mystical'],
+            'dragon': ['wyrm', 'drake', 'wyvern'],
+            'fantasy': ['medieval', 'knights', 'castle', 'kingdom', 'quest', 'dungeon'],
+            // Horror synonyms  
+            'horror': ['scary', 'frightening', 'terrifying', 'spooky', 'creepy'],
+            'zombie': ['undead', 'ghoul', 'walking dead'],
+            'ghost': ['spirit', 'phantom', 'specter', 'haunted'],
+            // Sci-fi synonyms
+            'space': ['cosmic', 'galactic', 'stellar', 'universe', 'spaceship'],
+            'robot': ['android', 'cyborg', 'mech', 'mechanical'],
+            'future': ['futuristic', 'cyberpunk', 'dystopian', 'utopian'],
+            // Adventure synonyms
+            'adventure': ['journey', 'expedition', 'exploration', 'voyage'],
+            'treasure': ['gold', 'riches', 'loot', 'bounty'],
+            'pirate': ['buccaneer', 'swashbuckler', 'corsair']
+        };
+        
+        const enhancedKeywords = new Set(words);
+        words.forEach(word => {
+            Object.entries(keywordMappings).forEach(([category, synonyms]) => {
+                if (synonyms.includes(word) || word.includes(category)) {
+                    enhancedKeywords.add(category);
+                }
+            });
+        });
+        
+        return Array.from(enhancedKeywords);
+    }
+
+    calculateDetailedScores(themes, input) {
+        const scores = {
+            fantasy: 0,
+            horror: 0,
+            scifi: 0,
+            adventure: 0,
+            ambient: 0
+        };
+        
+        const themeWeights = {
+            // Fantasy themes
+            'fantasy': { fantasy: 90, adventure: 30 },
+            'magic': { fantasy: 85, ambient: 20 },
+            'medieval': { fantasy: 80, adventure: 40 },
+            'dragon': { fantasy: 95, horror: 10 },
+            'dungeon': { fantasy: 75, horror: 45, adventure: 35 },
+            
+            // Horror themes
+            'horror': { horror: 95 },
+            'zombie': { horror: 90, scifi: 20 },
+            'ghost': { horror: 85, fantasy: 15 },
+            'haunted': { horror: 80, fantasy: 25 },
+            'betrayal': { horror: 60, adventure: 30 },
+            
+            // Sci-fi themes
+            'space': { scifi: 90, adventure: 25 },
+            'robot': { scifi: 85, fantasy: 10 },
+            'cyber': { scifi: 80, horror: 20 },
+            'future': { scifi: 75, adventure: 20 },
+            'alien': { scifi: 90, horror: 30 },
+            
+            // Adventure themes
+            'adventure': { adventure: 85, fantasy: 30 },
+            'exploration': { adventure: 80, ambient: 20 },
+            'journey': { adventure: 75, ambient: 35 },
+            'quest': { adventure: 85, fantasy: 40 },
+            'treasure': { adventure: 80, fantasy: 20 },
+            
+            // Ambient themes
+            'peaceful': { ambient: 90, fantasy: 15 },
+            'nature': { ambient: 85, fantasy: 25 },
+            'calm': { ambient: 80 },
+            'meditation': { ambient: 95 },
+            'artistic': { ambient: 70, fantasy: 20 }
+        };
+        
         themes.forEach(theme => {
-            if (theme.includes('fantasy') || theme.includes('magic') || theme.includes('dragon')) {
-                suggestions.push({
-                    category: 'fantasy',
-                    reason: `Fantasy themes detected in "${input}"`,
-                    tracks: this.soundtracks.fantasy
-                });
-            }
-            if (theme.includes('horror') || theme.includes('zombie') || theme.includes('scary')) {
-                suggestions.push({
-                    category: 'horror',
-                    reason: `Horror themes detected in "${input}"`,
-                    tracks: this.soundtracks.horror
-                });
-            }
-            if (theme.includes('space') || theme.includes('sci') || theme.includes('robot') || theme.includes('cyber')) {
-                suggestions.push({
-                    category: 'scifi',
-                    reason: `Science fiction themes detected in "${input}"`,
-                    tracks: this.soundtracks.scifi
-                });
-            }
-            if (theme.includes('adventure') || theme.includes('explore') || theme.includes('quest')) {
-                suggestions.push({
-                    category: 'adventure',
-                    reason: `Adventure themes detected in "${input}"`,
-                    tracks: this.soundtracks.adventure
-                });
-            }
-            if (theme.includes('peaceful') || theme.includes('calm') || theme.includes('nature')) {
-                suggestions.push({
-                    category: 'ambient',
-                    reason: `Peaceful themes detected in "${input}"`,
-                    tracks: this.soundtracks.ambient
+            const weights = themeWeights[theme.toLowerCase()];
+            if (weights) {
+                Object.entries(weights).forEach(([category, weight]) => {
+                    if (scores.hasOwnProperty(category)) {
+                        scores[category] += weight;
+                    }
                 });
             }
         });
+        
+        // Normalize scores to 0-100 range
+        const maxScore = Math.max(...Object.values(scores));
+        if (maxScore > 0) {
+            Object.keys(scores).forEach(key => {
+                scores[key] = Math.round((scores[key] / maxScore) * 100);
+            });
+        }
+        
+        return scores;
+    }
 
-        return suggestions.length > 0 ? suggestions[0] : null;
+    calculateKeywordScores(keywords, input) {
+        const scores = this.calculateDetailedScores(keywords, input);
+        
+        // Add base randomness to prevent all zeros
+        Object.keys(scores).forEach(key => {
+            if (scores[key] === 0) {
+                scores[key] = Math.floor(Math.random() * 25) + 5;
+            }
+        });
+        
+        return scores;
+    }
+
+    selectBestCategory(scores) {
+        const entries = Object.entries(scores);
+        const best = entries.reduce((max, [category, score]) => 
+            score > max.score ? { name: category, score } : max, 
+            { name: 'ambient', score: 0 }
+        );
+        
+        return best;
+    }
+
+    getDefaultRecommendation(input) {
+        return {
+            category: 'ambient',
+            reason: `No specific themes detected for "${input}". Suggesting ambient music for a versatile gaming atmosphere.`,
+            tracks: this.soundtracks.ambient || [],
+            confidence: 40,
+            detectedKeywords: [],
+            scoringBreakdown: { ambient: 40, fantasy: 30, adventure: 25, scifi: 20, horror: 15 }
+        };
     }
 
     displayGameSuggestions(game) {
         const trackList = document.getElementById('track-list');
         const categoryTitle = document.querySelector('.playlist-section h2');
         
-        categoryTitle.textContent = `Suggestions for ${this.currentBoardGame}`;
+        categoryTitle.textContent = `Recommendations for ${this.currentBoardGame}`;
         
         let html = `<div class="game-suggestions">`;
         
-        game.suggestedSoundtracks.forEach((suggestion, index) => {
-            html += `
-                <div class="movie-suggestion" onclick="tabletopTunes.loadMovieSoundtrack('${suggestion.movie}', ${index})">
-                    <div class="movie-header">
-                        <h4><i class="fas fa-film"></i> ${suggestion.movie}</h4>
-                        <p class="suggestion-reason">${suggestion.reason}</p>
+        // Check if this is our enhanced recommendation system
+        if (game.suggestedSoundtracks) {
+            // Original game data format
+            game.suggestedSoundtracks.forEach((suggestion, index) => {
+                html += `
+                    <div class="movie-suggestion enhanced-suggestion" onclick="tabletopTunes.loadMovieSoundtrack('${suggestion.movie}', ${index})">
+                        <div class="movie-header">
+                            <h4><i class="fas fa-film"></i> ${suggestion.movie}</h4>
+                            <p class="suggestion-reason">${suggestion.reason}</p>
+                        </div>
+                        <div class="suggested-tracks">
+                            ${suggestion.tracks.map((track, trackIndex) => `
+                                <div class="suggested-track" onclick="event.stopPropagation(); tabletopTunes.playMovieTrack('${suggestion.movie}', '${track}', ${trackIndex})">
+                                    <span class="track-name">${track}</span>
+                                    <span class="track-source">from ${suggestion.movie}</span>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
-                    <div class="suggested-tracks">
-                        ${suggestion.tracks.map((track, trackIndex) => `
-                            <div class="suggested-track" onclick="event.stopPropagation(); tabletopTunes.playMovieTrack('${suggestion.movie}', '${track}', ${trackIndex})">
-                                <span class="track-name">${track}</span>
-                                <span class="track-source">from ${suggestion.movie}</span>
+                `;
+            });
+        } else {
+            // New enhanced recommendation format
+            const result = this.suggestByTheme(this.currentBoardGame);
+            if (result) {
+                html += `
+                    <div class="enhanced-recommendation-card">
+                        <div class="recommendation-header">
+                            <div class="category-badge ${result.category}">
+                                <i class="fas fa-${this.getCategoryIcon(result.category)}"></i>
+                                ${result.category.charAt(0).toUpperCase() + result.category.slice(1)}
                             </div>
-                        `).join('')}
+                            <div class="confidence-score">
+                                <span class="confidence-label">Match Confidence</span>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width: ${result.confidence || 0}%"></div>
+                                </div>
+                                <span class="confidence-value">${result.confidence || 0}%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="recommendation-details">
+                            <h4>🎵 Recommended Soundtrack Category</h4>
+                            <p class="recommendation-reason">${result.reason}</p>
+                            
+                            ${result.detectedThemes ? `
+                                <div class="detected-themes">
+                                    <strong>Game Themes:</strong> 
+                                    ${result.detectedThemes.map(theme => `<span class="theme-tag">${theme}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            ${result.detectedKeywords && result.detectedKeywords.length > 0 ? `
+                                <div class="detected-keywords">
+                                    <strong>Key Elements:</strong> 
+                                    ${result.detectedKeywords.slice(0, 5).map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            <div class="scoring-breakdown">
+                                <h5>Decision Analysis:</h5>
+                                <div class="score-details">
+                                    ${Object.entries(result.scoringBreakdown || {}).map(([category, score]) => `
+                                        <div class="score-item ${category === result.category ? 'selected' : ''}">
+                                            <span class="score-category">${category.charAt(0).toUpperCase() + category.slice(1)}</span>
+                                            <div class="score-bar-mini">
+                                                <div class="score-fill-mini" style="width: ${score}%"></div>
+                                            </div>
+                                            <span class="score-value">${score}%</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="recommended-tracks">
+                            <h5><i class="fas fa-music"></i> Available Tracks (${result.tracks.length})</h5>
+                            <div class="tracks-grid">
+                                ${result.tracks.map((track, index) => `
+                                    <div class="track-card" onclick="tabletopTunes.playTrack(${index}, '${result.category}')">
+                                        <div class="track-info">
+                                            <span class="track-name">${track.name}</span>
+                                            <span class="track-duration">${track.duration}</span>
+                                        </div>
+                                        <div class="track-meta">
+                                            <span class="track-movie">${track.movie || track.description}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            `;
-        });
+                `;
+            }
+        }
         
         html += `</div>`;
         trackList.innerHTML = html;
+    }
+
+    getCategoryIcon(category) {
+        const icons = {
+            fantasy: 'dragon',
+            horror: 'ghost',
+            scifi: 'rocket',
+            adventure: 'compass',
+            ambient: 'leaf'
+        };
+        return icons[category] || 'music';
     }
 
     loadMovieSoundtrack(movieName, suggestionIndex) {
