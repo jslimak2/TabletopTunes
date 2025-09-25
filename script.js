@@ -691,9 +691,20 @@ class TabletopTunes {
         if (name.includes('tavern') || name.includes('inn') || name.includes('social')) scores.tavern += 85;
         if (name.includes('party') || name.includes('gathering') || name.includes('feast')) scores.tavern += 65;
         
-        // Add base scores to prevent all zeros
+        // Add small baseline scores to prevent all zeros, using category-specific defaults
+        const baselineScores = {
+            ambient: 8,    // Usually a safe fallback for most games
+            fantasy: 12,   // Popular category, gets slightly higher baseline
+            adventure: 10, // Common theme, moderate baseline
+            scifi: 6,      // More specific, lower baseline
+            horror: 5,     // Very specific, lowest baseline
+            tavern: 7      // Social games, moderate baseline
+        };
+        
         Object.keys(scores).forEach(key => {
-            if (scores[key] === 0) scores[key] = Math.floor(Math.random() * 10) + 5; // 5-14 range
+            if (scores[key] === 0) {
+                scores[key] = baselineScores[key] || 8; // Default to 8 if category not found
+            }
         });
         
         return scores;
@@ -1403,10 +1414,19 @@ class TabletopTunes {
     calculateKeywordScores(keywords, input) {
         const scores = this.calculateDetailedScores(keywords, input);
         
-        // Add small base scores to prevent all zeros, keeping differentiation
+        // Add deterministic baseline scores to prevent all zeros, maintaining meaningful differentiation
+        const baselineScores = {
+            ambient: 10,   // Universal fallback - most games can use ambient music
+            fantasy: 15,   // Popular and versatile category
+            adventure: 12, // Common theme across many games  
+            scifi: 8,      // More niche, lower baseline
+            horror: 6,     // Very specific genre, lowest baseline
+            tavern: 9      // Social/casual games baseline
+        };
+        
         Object.keys(scores).forEach(key => {
             if (scores[key] === 0) {
-                scores[key] = Math.floor(Math.random() * 8) + 5; // 5-12 range for baseline
+                scores[key] = baselineScores[key] || 10; // Default to 10 if category not found
             }
         });
         
