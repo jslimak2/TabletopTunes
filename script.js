@@ -691,9 +691,20 @@ class TabletopTunes {
         if (name.includes('tavern') || name.includes('inn') || name.includes('social')) scores.tavern += 85;
         if (name.includes('party') || name.includes('gathering') || name.includes('feast')) scores.tavern += 65;
         
-        // Add base scores to prevent all zeros
+        // Add small baseline scores to prevent all zeros, using category-specific defaults
+        const baselineScores = {
+            ambient: 8,    // Usually a safe fallback for most games
+            fantasy: 12,   // Popular category, gets slightly higher baseline
+            adventure: 10, // Common theme, moderate baseline
+            scifi: 6,      // More specific, lower baseline
+            horror: 5,     // Very specific, lowest baseline
+            tavern: 7      // Social games, moderate baseline
+        };
+        
         Object.keys(scores).forEach(key => {
-            if (scores[key] === 0) scores[key] = 99;
+            if (scores[key] === 0) {
+                scores[key] = baselineScores[key] || 8; // Default to 8 if category not found
+            }
         });
         
         return scores;
@@ -1329,7 +1340,8 @@ class TabletopTunes {
             horror: 0,
             scifi: 0,
             adventure: 0,
-            ambient: 0
+            ambient: 0,
+            tavern: 0
         };
         
         const themeWeights = {
@@ -1366,7 +1378,15 @@ class TabletopTunes {
             'nature': { ambient: 85, fantasy: 25 },
             'calm': { ambient: 80 },
             'meditation': { ambient: 95 },
-            'artistic': { ambient: 70, fantasy: 20 }
+            'artistic': { ambient: 70, fantasy: 20 },
+            
+            // Tavern/Social themes
+            'tavern': { tavern: 85, fantasy: 20 },
+            'inn': { tavern: 80, fantasy: 15 },
+            'social': { tavern: 75, ambient: 25 },
+            'party': { tavern: 70, ambient: 20 },
+            'gathering': { tavern: 65, ambient: 30 },
+            'feast': { tavern: 70, fantasy: 15 }
         };
         
         themes.forEach(theme => {
@@ -1394,10 +1414,19 @@ class TabletopTunes {
     calculateKeywordScores(keywords, input) {
         const scores = this.calculateDetailedScores(keywords, input);
         
-        // Add base randomness to prevent all zeros
+        // Add deterministic baseline scores to prevent all zeros, maintaining meaningful differentiation
+        const baselineScores = {
+            ambient: 10,   // Universal fallback - most games can use ambient music
+            fantasy: 15,   // Popular and versatile category
+            adventure: 12, // Common theme across many games  
+            scifi: 8,      // More niche, lower baseline
+            horror: 6,     // Very specific genre, lowest baseline
+            tavern: 9      // Social/casual games baseline
+        };
+        
         Object.keys(scores).forEach(key => {
             if (scores[key] === 0) {
-                scores[key] = 99;
+                scores[key] = baselineScores[key] || 10; // Default to 10 if category not found
             }
         });
         

@@ -268,4 +268,10 @@ if (typeof module !== 'undefined' && module.exports) {
     THEME_TO_GENRE_MAPPING,
     MOOD_BASED_SUGGESTIONS
   };
+} else if (typeof window !== 'undefined') {
+  // Browser global assignment
+  window.BOARD_GAMES_DATABASE = BOARD_GAMES_DATABASE;
+  window.MOVIE_SOUNDTRACK_CATEGORIES = MOVIE_SOUNDTRACK_CATEGORIES;
+  window.THEME_TO_GENRE_MAPPING = THEME_TO_GENRE_MAPPING;
+  window.MOOD_BASED_SUGGESTIONS = MOOD_BASED_SUGGESTIONS;
 }
