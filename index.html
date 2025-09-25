@@ -20,6 +20,9 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     
+    <!-- Spotify Web Playback SDK -->
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-192x192.png">
 </head>
@@ -28,11 +31,29 @@
         <header>
             <h1><i class="fas fa-dice-d20"></i> TabletopTunes</h1>
             <p>The Ultimate Board Game Soundtrack Player</p>
+            
+            <!-- Navigation -->
+            <nav class="main-nav">
+                <button class="nav-btn active" data-tab="main">
+                    <i class="fas fa-home"></i> Home
+                </button>
+                <button class="nav-btn" data-tab="spotify">
+                    <i class="fab fa-spotify"></i> Spotify
+                </button>
+                <button class="nav-btn" data-tab="how-it-works">
+                    <i class="fas fa-cog"></i> How It Works
+                </button>
+                <button class="nav-btn" data-tab="visualization">
+                    <i class="fas fa-chart-line"></i> Live Insights
+                </button>
+            </nav>
         </header>
 
         <main>
-            <!-- Board Game Search Section -->
-            <div class="game-search-section">
+            <!-- Main Tab Content -->
+            <div class="tab-content active" id="main-tab">
+                <!-- Board Game Search Section -->
+                <div class="game-search-section">
                 <h2><i class="fas fa-dice-d20"></i> Find Soundtracks for Your Board Game</h2>
                 <div class="search-container">
                     <input type="text" id="game-search" placeholder="Enter your board game name (e.g., Gloomhaven, Catan, Pandemic...)">
@@ -128,6 +149,155 @@
                 </div>
                 <div class="track-list" id="track-list">
                     <p class="empty-playlist">Enter a board game name above or select a soundtrack category</p>
+                </div>
+            </div>
+            </div>
+
+            <!-- Spotify Tab Content -->
+            <div class="tab-content" id="spotify-tab">
+                <div class="spotify-section">
+                    <h2><i class="fab fa-spotify"></i> Connect to Spotify</h2>
+                    <div class="spotify-status" id="spotify-status">
+                        <p>Connect your Spotify account to access your music library and get personalized recommendations.</p>
+                        <button id="spotify-login-btn" class="spotify-btn">
+                            <i class="fab fa-spotify"></i> Connect Spotify
+                        </button>
+                    </div>
+                    <div class="spotify-content" id="spotify-content" style="display: none;">
+                        <div class="user-profile" id="user-profile"></div>
+                        <div class="spotify-search">
+                            <h3>Search Spotify</h3>
+                            <input type="text" id="spotify-search" placeholder="Search for tracks, artists, or albums...">
+                            <button id="spotify-search-btn">Search</button>
+                        </div>
+                        <div class="spotify-results" id="spotify-results"></div>
+                        <div class="spotify-recommendations" id="spotify-recommendations">
+                            <h3>Recommendations for Your Game</h3>
+                            <div id="game-recommendations"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- How It Works Tab Content -->
+            <div class="tab-content" id="how-it-works-tab">
+                <div class="how-it-works-section">
+                    <h2><i class="fas fa-cog"></i> How TabletopTunes Works</h2>
+                    
+                    <div class="process-overview">
+                        <div class="process-step">
+                            <div class="step-icon"><i class="fas fa-search"></i></div>
+                            <h3>1. Game Analysis</h3>
+                            <p>When you enter a board game name, our algorithm analyzes the game's theme, mechanics, and atmosphere to understand its core characteristics.</p>
+                        </div>
+                        <div class="process-step">
+                            <div class="step-icon"><i class="fas fa-brain"></i></div>
+                            <h3>2. Theme Matching</h3>
+                            <p>We use keyword detection and semantic analysis to match game themes with appropriate movie soundtrack categories:</p>
+                            <ul>
+                                <li><strong>Fantasy games</strong> → Epic fantasy soundtracks (Lord of the Rings, Game of Thrones)</li>
+                                <li><strong>Horror games</strong> → Suspenseful horror soundtracks (The Conjuring, Halloween)</li>
+                                <li><strong>Sci-fi games</strong> → Futuristic soundtracks (Blade Runner, Interstellar)</li>
+                                <li><strong>Adventure games</strong> → Heroic adventure soundtracks (Indiana Jones, Pirates of the Caribbean)</li>
+                            </ul>
+                        </div>
+                        <div class="process-step">
+                            <div class="step-icon"><i class="fas fa-music"></i></div>
+                            <h3>3. Soundtrack Curation</h3>
+                            <p>Our database contains carefully curated movie soundtracks categorized by mood, tempo, and thematic elements. Each soundtrack is hand-picked for its ability to enhance specific gaming experiences.</p>
+                        </div>
+                        <div class="process-step">
+                            <div class="step-icon"><i class="fas fa-magic"></i></div>
+                            <h3>4. Dynamic Recommendations</h3>
+                            <p>The system provides real-time explanations for why each soundtrack matches your game, helping you understand the connection and choose the perfect atmospheric music.</p>
+                        </div>
+                    </div>
+
+                    <div class="algorithm-details">
+                        <h3>Algorithm Deep Dive</h3>
+                        <div class="algorithm-flow">
+                            <div class="flow-step">
+                                <strong>Input Processing:</strong> Game name is normalized and split into keywords
+                            </div>
+                            <div class="flow-arrow">↓</div>
+                            <div class="flow-step">
+                                <strong>Theme Detection:</strong> Keywords are matched against theme dictionaries
+                            </div>
+                            <div class="flow-arrow">↓</div>
+                            <div class="flow-step">
+                                <strong>Category Scoring:</strong> Each soundtrack category receives a relevance score
+                            </div>
+                            <div class="flow-arrow">↓</div>
+                            <div class="flow-step">
+                                <strong>Result Selection:</strong> Highest scoring category is selected with explanation
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="supported-games">
+                        <h3>Supported Game Database</h3>
+                        <p>Our system recognizes and provides tailored recommendations for hundreds of popular board games, including:</p>
+                        <div class="game-categories">
+                            <div class="game-cat">
+                                <h4>Strategy Games</h4>
+                                <span>Settlers of Catan, Ticket to Ride, Wingspan, Scythe, Splendor</span>
+                            </div>
+                            <div class="game-cat">
+                                <h4>Adventure & Fantasy</h4>
+                                <span>Gloomhaven, Betrayal at House on the Hill, King of Tokyo</span>
+                            </div>
+                            <div class="game-cat">
+                                <h4>Cooperative & Thematic</h4>
+                                <span>Pandemic, Dead of Winter, Azul</span>
+                            </div>
+                            <div class="game-cat">
+                                <h4>Classic Games</h4>
+                                <span>Risk, Clue, Monopoly, Chess</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization Tab Content -->
+            <div class="tab-content" id="visualization-tab">
+                <div class="visualization-section">
+                    <h2><i class="fas fa-chart-line"></i> Live Recommendation Insights</h2>
+                    
+                    <div class="viz-controls">
+                        <input type="text" id="viz-game-input" placeholder="Enter a game to see live analysis...">
+                        <button id="viz-analyze-btn">Analyze Game</button>
+                    </div>
+
+                    <div class="visualization-container">
+                        <div class="viz-panel" id="analysis-steps">
+                            <h3>Analysis Steps</h3>
+                            <div class="step-list" id="step-list">
+                                <p class="placeholder">Enter a game name to see the analysis process in real-time</p>
+                            </div>
+                        </div>
+
+                        <div class="viz-panel" id="keyword-analysis">
+                            <h3>Keyword Analysis</h3>
+                            <div class="keyword-cloud" id="keyword-cloud">
+                                <p class="placeholder">Keywords will appear here during analysis</p>
+                            </div>
+                        </div>
+
+                        <div class="viz-panel" id="category-scores">
+                            <h3>Category Scoring</h3>
+                            <div class="score-bars" id="score-bars">
+                                <p class="placeholder">Category scores will be visualized here</p>
+                            </div>
+                        </div>
+
+                        <div class="viz-panel" id="recommendation-result">
+                            <h3>Final Recommendation</h3>
+                            <div class="result-display" id="result-display">
+                                <p class="placeholder">The final recommendation will appear here</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
