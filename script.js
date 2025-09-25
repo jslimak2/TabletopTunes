@@ -2079,6 +2079,7 @@ class TabletopTunes {
         
         try {
             const result = await this.searchBoardGame(gameInput);
+            console.log('Search result:', result, 'has suggestedSoundtracks:', !!result?.suggestedSoundtracks);
             if (!result) {
                 this.showNotification(`No specific suggestions found for "${gameInput}". Try browsing categories or popular games.`);
                 // Reset to category browsing
@@ -2086,12 +2087,14 @@ class TabletopTunes {
                 this.currentBoardGame = null;
                 const playlistTitle = document.querySelector('.playlist-section h3');
                 if (playlistTitle) playlistTitle.textContent = 'Current Playlist';
-            } else if (result.category) {
-                // Handle theme-based results
+            } else if (result.category && !result.suggestedSoundtracks) {
+                // Handle theme-based results only (not game database results)
+                console.log('Calling displayThemeBasedSuggestions for:', gameInput);
                 this.currentBoardGame = gameInput;
                 this.matchingMode = 'boardgame';
                 this.displayThemeBasedSuggestions(result, gameInput);
             }
+            // If result has suggestedSoundtracks, displayGameSuggestions was already called in searchBoardGame
         } catch (error) {
             console.error('Game search error:', error);
             this.showNotification('Error searching for game. Please try again.');
@@ -2099,10 +2102,12 @@ class TabletopTunes {
     }
 
     async searchBoardGame(gameName) {
+        console.log('searchBoardGame called with:', gameName);
         // First, check local database for exact match
         if (typeof BOARD_GAMES_DATABASE !== 'undefined') {
             const game = BOARD_GAMES_DATABASE[gameName];
             if (game) {
+                console.log('Found exact match in database:', game);
                 this.currentBoardGame = gameName;
                 this.matchingMode = 'boardgame';
                 this.displayGameSuggestions(game);
@@ -2110,6 +2115,7 @@ class TabletopTunes {
                 // Automatically save to games closet
                 this.saveToGamesCloset(gameName, { source: 'local_database' });
                 
+                console.log('Returning game object with suggestedSoundtracks:', !!game.suggestedSoundtracks);
                 return game;
             }
         }
@@ -2592,7 +2598,7 @@ class TabletopTunes {
             confidence: result.confidence || 50,
             detectedKeywords: result.detectedKeywords || [],
             category: result.category || 'ambient',
-            tracks: result.tracks || []
+            tracks: result.tracks || this.soundtracks[result.category || 'ambient'] || []
         };
         
         let html = `<div class="game-suggestions theme-suggestions">`;
