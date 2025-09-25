@@ -68,3 +68,16 @@ generate-icons.html
 *.dmg
 *.exe
 *.msi
+
+# Test coverage and reports
+coverage/
+.nyc_output
+test-results/
+playwright-report/
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# eslint cache
+.eslintcache
