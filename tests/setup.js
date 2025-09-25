@@ -1,6 +1,32 @@
 // Global test setup
 require('@testing-library/jest-dom');
 
+// Import game data
+const gameData = require('../game-soundtrack-data.js');
+global.BOARD_GAMES_DATABASE = gameData.BOARD_GAMES_DATABASE;
+global.MOVIE_SOUNDTRACK_CATEGORIES = gameData.MOVIE_SOUNDTRACK_CATEGORIES;
+global.THEME_TO_GENRE_MAPPING = gameData.THEME_TO_GENRE_MAPPING;
+global.MOOD_BASED_SUGGESTIONS = gameData.MOOD_BASED_SUGGESTIONS;
+
+// Mock Response for node environment
+global.Response = class Response {
+  constructor(body, init = {}) {
+    this.body = body;
+    this.status = init.status || 200;
+    this.ok = this.status >= 200 && this.status < 300;
+    this.statusText = init.statusText || 'OK';
+    this.headers = new Map(Object.entries(init.headers || {}));
+  }
+  
+  text() {
+    return Promise.resolve(this.body);
+  }
+  
+  json() {
+    return Promise.resolve(JSON.parse(this.body));
+  }
+};
+
 // Mock localStorage
 const localStorageMock = {
   getItem: jest.fn(),
