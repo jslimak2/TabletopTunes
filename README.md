@@ -8,8 +8,10 @@ TabletopTunes is a multi-platform audio player specifically designed for tableto
 
 ### 🎬 Movie Soundtrack Matching
 - **Smart Board Game Analysis**: Enter any board game name and get curated movie soundtrack suggestions
+- **BoardGameGeek Integration**: Automatically searches BoardGameGeek's database of 100,000+ games when local matches aren't found
 - **Intelligent Matching Algorithm**: Analyzes game themes, mechanics, and mood to suggest perfect soundtracks
 - **Extensive Game Database**: Pre-configured suggestions for popular games like Gloomhaven, Catan, Pandemic, Scythe, and many more
+- **Auto-Generated Suggestions**: Creates soundtrack recommendations for any BGG game using AI-powered theme detection
 - **Movie-to-Game Reasoning**: Detailed explanations of why each soundtrack matches your game
 
 ### 🎵 Enhanced Audio Experience
@@ -95,19 +97,28 @@ TabletopTunes analyzes your board game across multiple dimensions:
 - **Mechanics**: Cooperative, Competitive, Story-driven
 - **Setting**: Medieval, Space, Modern, Ancient
 
-### 2. Movie Soundtrack Matching
+### 2. BoardGameGeek Integration
+When you search for a game:
+- **Local Database First**: Checks our curated database of popular games
+- **BGG API Fallback**: If not found locally, searches BoardGameGeek's 100,000+ game database
+- **Automatic Theme Detection**: Analyzes BGG categories, mechanisms, and descriptions
+- **Smart Classification**: Maps BGG data to soundtrack categories (Fantasy, Horror, Sci-Fi, etc.)
+- **Rate-Limited Requests**: Respects BGG API limits with intelligent caching
+
+### 3. Movie Soundtrack Matching
 Our algorithm matches games to movie soundtracks based on:
 - **Thematic Alignment**: Fantasy games get fantasy movie soundtracks
 - **Mood Compatibility**: Tense games get suspenseful soundtracks
 - **Atmospheric Fit**: Horror games get creepy movie themes
 - **Pacing Match**: Fast games get energetic soundtracks
 
-### 3. Curated Recommendations
+### 4. Curated Recommendations
 Each suggestion includes:
 - **Movie Title**: Source of the soundtrack
 - **Reasoning**: Why this soundtrack fits your game
 - **Specific Tracks**: Hand-picked tracks that match best
 - **Alternative Options**: Multiple soundtracks per game
+- **Source Indication**: Shows whether suggestions come from curated database or BGG integration
 
 ## 🛠️ Technology Stack
 
@@ -125,6 +136,8 @@ Each suggestion includes:
 ### Data & Storage
 - **Local Storage**: Persistent user preferences and playlists
 - **Comprehensive Database**: 20+ board games with movie matches
+- **BoardGameGeek API**: Integration with BGG XML API v2 for unlimited game access
+- **Intelligent Caching**: Rate-limited API calls with smart cache management
 - **JSON Data Structure**: Flexible, expandable game-soundtrack mapping
 
 ## 📊 Browser Compatibility
@@ -215,6 +228,7 @@ We welcome contributions! Here's how you can help:
 - [x] ~~Multi-platform support (PWA, Android, Desktop)~~
 - [x] ~~Board game to movie soundtrack matching~~
 - [x] ~~Comprehensive game database~~
+- [x] ~~BoardGameGeek API integration for unlimited game support~~
 - [ ] Real audio file integration with preview capability
 - [ ] User-uploaded soundtrack support
 - [ ] Cloud playlist synchronization
