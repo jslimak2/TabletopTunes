@@ -549,25 +549,109 @@ class TabletopTunes {
         const scoreBars = document.getElementById('score-bars');
         if (!scoreBars) return;
         
-        // Calculate scores using existing logic
-        const result = this.suggestByTheme(gameName);
-        const scores = this.calculateAllCategoryScores(gameName);
+        // Use the enhanced recommendation system
+        const recommendation = this.suggestByTheme(gameName);
+        const scores = recommendation ? recommendation.scoringBreakdown : this.calculateAllCategoryScores(gameName);
         
         scoreBars.innerHTML = '';
         
-        Object.entries(scores).forEach(([category, score], index) => {
+        // Sort scores by value for better visualization
+        const sortedScores = Object.entries(scores).sort(([,a], [,b]) => b - a);
+        
+        sortedScores.forEach(([category, score], index) => {
             setTimeout(() => {
                 const barDiv = document.createElement('div');
-                barDiv.className = 'score-bar';
+                barDiv.className = `score-bar ${recommendation && category === recommendation.category ? 'winner' : ''}`;
                 barDiv.innerHTML = `
-                    <div class="bar-label">${category}</div>
+                    <div class="bar-label">${category.charAt(0).toUpperCase() + category.slice(1)}</div>
                     <div class="bar-fill">
-                        <div class="bar-progress" style="width: ${score}%"></div>
+                        <div class="bar-progress" style="width: ${score}%; background: ${this.getCategoryColor(category)}"></div>
                     </div>
                     <div class="bar-score">${score}%</div>
                 `;
                 scoreBars.appendChild(barDiv);
             }, index * 300);
+        });
+    }
+
+    getCategoryColor(category) {
+        const colors = {
+            fantasy: 'linear-gradient(90deg, #8b5cf6, #a855f7)',
+            horror: 'linear-gradient(90deg, #ef4444, #dc2626)', 
+            scifi: 'linear-gradient(90deg, #06b6d4, #0891b2)',
+            adventure: 'linear-gradient(90deg, #f59e0b, #d97706)',
+            ambient: 'linear-gradient(90deg, #10b981, #059669)',
+            tavern: 'linear-gradient(90deg, #f97316, #ea580c)'
+        };
+        return colors[category] || 'linear-gradient(90deg, var(--primary-color), var(--secondary-color))';
+    }
+
+    async showFinalRecommendation(gameName) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const resultDisplay = document.getElementById('result-display');
+        if (!resultDisplay) return;
+        
+        const result = this.suggestByTheme(gameName);
+        
+        if (result) {
+            resultDisplay.innerHTML = `
+                <div class="recommendation-card enhanced-viz-card">
+                    <div class="recommendation-header">
+                        <div class="category-badge ${result.category}">
+                            <i class="fas fa-${this.getCategoryIcon(result.category)}"></i>
+                            ${result.category.charAt(0).toUpperCase() + result.category.slice(1)} Category Selected
+                        </div>
+                        <div class="confidence-score">
+                            <span class="confidence-value">${result.confidence || 'N/A'}% Match</span>
+                        </div>
+                    </div>
+                    <p class="recommendation-reason">${result.reason}</p>
+                    <div class="recommendation-details">
+                        ${result.detectedKeywords && result.detectedKeywords.length > 0 ? `
+                            <div class="detected-elements">
+                                <strong>Key Elements:</strong> 
+                                ${result.detectedKeywords.slice(0, 4).map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                        <div class="tracks-available">
+                            <i class="fas fa-music"></i> ${result.tracks.length} tracks available in this category
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            resultDisplay.innerHTML = `
+                <div class="recommendation-card">
+                    <h4>Analysis Complete</h4>
+                    <p>Unable to find a specific match. Try browsing categories or popular games for suggestions.</p>
+                </div>
+            `;
+        }
+    }
+
+    async showKeywordAnalysis(gameName) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const keywordCloud = document.getElementById('keyword-cloud');
+        if (!keywordCloud) return;
+        
+        // Use enhanced keyword extraction
+        const recommendation = this.suggestByTheme(gameName);
+        const keywords = recommendation ? 
+            (recommendation.detectedKeywords || recommendation.detectedThemes || this.extractAdvancedKeywords(gameName.toLowerCase())) :
+            this.extractKeywords(gameName);
+        
+        keywordCloud.innerHTML = '';
+        
+        keywords.slice(0, 8).forEach((keyword, index) => {
+            setTimeout(() => {
+                const keywordTag = document.createElement('div');
+                keywordTag.className = 'keyword-tag enhanced-keyword';
+                keywordTag.textContent = keyword;
+                keywordTag.style.animationDelay = `${index * 0.1}s`;
+                keywordCloud.appendChild(keywordTag);
+            }, index * 200);
         });
     }
     

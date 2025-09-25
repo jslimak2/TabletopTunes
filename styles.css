@@ -2432,3 +2432,259 @@ footer {
     margin-bottom: var(--space-sm);
     line-height: 1.5;
 }
+
+/* Enhanced Visualization Styles */
+.enhanced-viz-card {
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));
+    border: 2px solid var(--accent-color);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.enhanced-keyword {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: scale(1);
+    transition: all 0.3s ease;
+}
+
+.enhanced-keyword:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.score-bar.winner {
+    background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,223,0,0.05));
+    border: 2px solid #ffd700;
+    border-radius: var(--radius-md);
+    padding: var(--space-sm);
+    transform: scale(1.02);
+    box-shadow: 0 4px 15px rgba(255,215,0,0.3);
+}
+
+.score-bar.winner .bar-label {
+    color: #ffd700;
+    font-weight: 600;
+}
+
+.detected-elements {
+    margin: var(--space-md) 0;
+    padding: var(--space-sm);
+    background: rgba(78, 205, 196, 0.1);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--secondary-color);
+}
+
+.tracks-available {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.analysis-step {
+    padding: var(--space-sm);
+    margin-bottom: var(--space-xs);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--primary-color);
+    animation: slideInLeft 0.5s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Professional UI Enhancements */
+
+/* Enhanced Header */
+header {
+    background: linear-gradient(135deg, var(--bg-primary), #2a3441);
+    border-bottom: 3px solid var(--primary-color);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+header h1 {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    font-size: 2.5rem;
+    text-shadow: none;
+}
+
+header p {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 1.1rem;
+    margin-top: var(--space-sm);
+}
+
+/* Enhanced Navigation */
+.nav-btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.nav-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.nav-btn:hover::before {
+    left: 100%;
+}
+
+.nav-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    border-color: var(--primary-color);
+}
+
+.nav-btn.active {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(78, 205, 196, 0.3);
+}
+
+/* Enhanced Cards */
+.category-card, .game-card, .movie-suggestion {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.category-card::before, .game-card::before, .movie-suggestion::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.category-card:hover::before, .game-card:hover::before, .movie-suggestion:hover::before {
+    transform: scaleX(1);
+}
+
+.category-card:hover, .game-card:hover, .movie-suggestion:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+/* Enhanced Buttons */
+.search-btn, .spotify-btn, button:not(.nav-btn) {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.search-btn::before, .spotify-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.5s ease;
+}
+
+.search-btn:hover::before, .spotify-btn:hover::before {
+    width: 200%;
+    height: 200%;
+}
+
+.search-btn:hover, .spotify-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+/* Enhanced Input Fields */
+input[type="text"], textbox {
+    transition: all 0.3s ease;
+    border: 2px solid var(--gray-600);
+    position: relative;
+}
+
+input[type="text"]:focus, textbox:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Enhanced Animations */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(78, 205, 196, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(78, 205, 196, 0.8); }
+}
+
+.loading-element {
+    animation: pulse 2s infinite;
+}
+
+.highlight-element {
+    animation: glow 2s infinite;
+}
+
+/* Enhanced Responsiveness */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2rem;
+    }
+    
+    header p {
+        font-size: 1rem;
+    }
+    
+    .nav-btn {
+        font-size: 0.8rem;
+        padding: var(--space-sm);
+    }
+}
+
+/* Enhanced Dark Theme Colors */
+:root {
+    --bg-primary: #1a202c;
+    --bg-secondary: #2d3748;
+    --bg-card: #374151;
+    --text-primary: #f7fafc;
+    --text-secondary: #e2e8f0;
+    --text-muted: #a0aec0;
+    --primary-color: #4ecdc4;
+    --secondary-color: #44a08d;
+    --accent-color: #ffd700;
+    --spotify-green: #1ed760;
+    --gray-600: #4a5568;
+    --gray-700: #2d3748;
+}
