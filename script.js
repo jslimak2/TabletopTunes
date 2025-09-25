@@ -2584,7 +2584,7 @@ class TabletopTunes {
         const trackList = document.getElementById('track-list');
         const categoryTitle = document.querySelector('.playlist-section h3');
         
-        if (categoryTitle) categoryTitle.textContent = `Theme-Based Suggestions for ${gameName}`;
+        if (categoryTitle) categoryTitle.textContent = `Movie Soundtrack Recommendations for ${gameName}`;
         
         // Add null safety checks
         if (!result) {
@@ -2593,12 +2593,23 @@ class TabletopTunes {
         }
         
         // Ensure required properties exist with fallbacks
+        // Map game categories to soundtrack categories
+        const categoryMapping = {
+            'cooperative': 'adventure',    // Cooperative games → Adventure soundtracks
+            'strategy': 'ambient',         // Strategy games → Ambient soundtracks
+            'adventure': 'adventure',      // Adventure games → Adventure soundtracks
+            'thematic': 'fantasy'          // Thematic games → Fantasy soundtracks
+        };
+        
+        const mappedCategory = categoryMapping[result.category] || result.category || 'ambient';
+        const categoryTracks = this.soundtracks[mappedCategory] || this.soundtracks['ambient'] || [];
+        
         const safeResult = {
-            reason: result.reason || 'Theme analysis completed',
+            reason: result.reason || `We've analyzed "${gameName}" and found the perfect soundtrack category!`,
             confidence: result.confidence || 50,
             detectedKeywords: result.detectedKeywords || [],
-            category: result.category || 'ambient',
-            tracks: result.tracks || this.soundtracks[result.category || 'ambient'] || []
+            category: mappedCategory,
+            tracks: result.tracks || categoryTracks
         };
         
         let html = `<div class="game-suggestions theme-suggestions">`;
@@ -2638,10 +2649,10 @@ class TabletopTunes {
                 <div class="category-header">
                     <h4><i class="fas fa-${this.getCategoryIcon(safeResult.category)}"></i> ${safeResult.category.charAt(0).toUpperCase() + safeResult.category.slice(1)} Soundtracks</h4>
                     <div class="suggested-badge">
-                        <i class="fas fa-magic"></i> Suggested
+                        <i class="fas fa-magic"></i> Recommended
                     </div>
                 </div>
-                <p class="category-description">Based on theme analysis, we suggest ${safeResult.category} soundtracks</p>
+                <p class="category-description">Perfect movie soundtracks for ${gameName} - click to start playing!</p>
                 <div class="sample-tracks">
                     ${safeResult.tracks.length > 0 ? 
                         safeResult.tracks.slice(0, 3).map(track => `
@@ -2652,7 +2663,7 @@ class TabletopTunes {
                         `).join('') : 
                         '<div class="no-tracks">No tracks available for this category</div>'
                     }
-                    ${safeResult.tracks.length > 3 ? `<div class="more-tracks">+${safeResult.tracks.length - 3} more tracks</div>` : ''}
+                    ${safeResult.tracks.length > 3 ? `<div class="more-tracks">+${safeResult.tracks.length - 3} more tracks - click to see all!</div>` : ''}
                 </div>
             </div>
         `;
