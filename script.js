@@ -693,7 +693,7 @@ class TabletopTunes {
         
         // Add base scores to prevent all zeros
         Object.keys(scores).forEach(key => {
-            if (scores[key] === 0) scores[key] = 99;
+            if (scores[key] === 0) scores[key] = Math.floor(Math.random() * 10) + 5; // 5-14 range
         });
         
         return scores;
@@ -1329,7 +1329,8 @@ class TabletopTunes {
             horror: 0,
             scifi: 0,
             adventure: 0,
-            ambient: 0
+            ambient: 0,
+            tavern: 0
         };
         
         const themeWeights = {
@@ -1366,7 +1367,15 @@ class TabletopTunes {
             'nature': { ambient: 85, fantasy: 25 },
             'calm': { ambient: 80 },
             'meditation': { ambient: 95 },
-            'artistic': { ambient: 70, fantasy: 20 }
+            'artistic': { ambient: 70, fantasy: 20 },
+            
+            // Tavern/Social themes
+            'tavern': { tavern: 85, fantasy: 20 },
+            'inn': { tavern: 80, fantasy: 15 },
+            'social': { tavern: 75, ambient: 25 },
+            'party': { tavern: 70, ambient: 20 },
+            'gathering': { tavern: 65, ambient: 30 },
+            'feast': { tavern: 70, fantasy: 15 }
         };
         
         themes.forEach(theme => {
@@ -1394,10 +1403,10 @@ class TabletopTunes {
     calculateKeywordScores(keywords, input) {
         const scores = this.calculateDetailedScores(keywords, input);
         
-        // Add base randomness to prevent all zeros
+        // Add small base scores to prevent all zeros, keeping differentiation
         Object.keys(scores).forEach(key => {
             if (scores[key] === 0) {
-                scores[key] = 99;
+                scores[key] = Math.floor(Math.random() * 8) + 5; // 5-12 range for baseline
             }
         });
         
