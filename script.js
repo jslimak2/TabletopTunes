@@ -1,4 +1,4 @@
-// TabletopTunes JavaScript - Board Game Soundtrack Player
+// TabletopTunes JavaScript - Enhanced Board Game Soundtrack Player
 
 class TabletopTunes {
     constructor() {
@@ -11,6 +11,11 @@ class TabletopTunes {
         this.currentCategory = null;
         this.currentBoardGame = null;
         this.matchingMode = 'category'; // 'category' or 'boardgame'
+        
+        // Spotify integration
+        this.spotifyPlayer = null;
+        this.spotifyAccessToken = null;
+        this.isSpotifyConnected = false;
         
         // Mock soundtrack data (in a real app, this would come from a server or local files)
         this.soundtracks = {
@@ -53,9 +58,374 @@ class TabletopTunes {
         };
         
         this.initializeEventListeners();
+        this.initializeTabSystem();
+        this.initializeSpotifyIntegration();
+        this.initializeVisualization();
         this.loadUserPreferences();
         this.updateDisplay();
         this.initializeElectronIntegration();
+    }
+    
+    // Tab System Management
+    initializeTabSystem() {
+        const navButtons = document.querySelectorAll('.nav-btn');
+        navButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const tabName = e.target.dataset.tab;
+                this.switchTab(tabName);
+            });
+        });
+    }
+    
+    switchTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Remove active class from all nav buttons
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Show selected tab
+        const selectedTab = document.getElementById(`${tabName}-tab`);
+        const selectedBtn = document.querySelector(`[data-tab="${tabName}"]`);
+        
+        if (selectedTab && selectedBtn) {
+            selectedTab.classList.add('active');
+            selectedBtn.classList.add('active');
+        }
+    }
+    
+    // Spotify Integration
+    initializeSpotifyIntegration() {
+        const spotifyLoginBtn = document.getElementById('spotify-login-btn');
+        if (spotifyLoginBtn) {
+            spotifyLoginBtn.addEventListener('click', () => this.connectSpotify());
+        }
+        
+        const spotifySearchBtn = document.getElementById('spotify-search-btn');
+        if (spotifySearchBtn) {
+            spotifySearchBtn.addEventListener('click', () => this.searchSpotify());
+        }
+        
+        // Initialize Spotify Web Playback SDK when available
+        window.onSpotifyWebPlaybackSDKReady = () => {
+            console.log('Spotify SDK Ready');
+            this.setupSpotifyPlayer();
+        };
+    }
+    
+    async connectSpotify() {
+        try {
+            // In a real implementation, this would use proper OAuth2 flow
+            // For demo purposes, we'll simulate the connection
+            const clientId = 'your-spotify-client-id'; // This would be your actual client ID
+            const redirectUri = encodeURIComponent(window.location.origin);
+            const scopes = encodeURIComponent('streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state');
+            
+            // For demo, we'll simulate a successful connection
+            this.simulateSpotifyConnection();
+            
+        } catch (error) {
+            console.error('Spotify connection failed:', error);
+            this.showNotification('Failed to connect to Spotify. Please try again.');
+        }
+    }
+    
+    simulateSpotifyConnection() {
+        // Simulate successful Spotify connection for demo
+        this.isSpotifyConnected = true;
+        this.spotifyAccessToken = 'demo-token';
+        
+        // Update UI
+        const statusDiv = document.getElementById('spotify-status');
+        const contentDiv = document.getElementById('spotify-content');
+        
+        if (statusDiv && contentDiv) {
+            statusDiv.style.display = 'none';
+            contentDiv.style.display = 'block';
+            
+            // Show user profile
+            const profileDiv = document.getElementById('user-profile');
+            if (profileDiv) {
+                profileDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg);">
+                        <div style="width: 50px; height: 50px; background: var(--spotify-green); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fab fa-spotify" style="color: white; font-size: 1.5rem;"></i>
+                        </div>
+                        <div>
+                            <h4 style="color: var(--text-primary); margin-bottom: 0.25rem;">Connected to Spotify</h4>
+                            <p style="color: var(--text-secondary); margin: 0;">Demo User - Premium Account</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        this.showNotification('Successfully connected to Spotify!');
+    }
+    
+    async searchSpotify() {
+        const searchInput = document.getElementById('spotify-search');
+        const query = searchInput?.value.trim();
+        
+        if (!query) {
+            this.showNotification('Please enter a search term');
+            return;
+        }
+        
+        // Simulate Spotify search results
+        const mockResults = [
+            { name: 'Epic Fantasy Adventure', artist: 'Movie Soundtrack', album: 'Lord of the Rings', id: '1' },
+            { name: 'Mystical Journey', artist: 'Orchestral', album: 'Fantasy Collection', id: '2' },
+            { name: 'Dragon\'s Theme', artist: 'Epic Music', album: 'Heroic Tales', id: '3' }
+        ];
+        
+        this.displaySpotifyResults(mockResults);
+    }
+    
+    displaySpotifyResults(results) {
+        const resultsDiv = document.getElementById('spotify-results');
+        if (!resultsDiv) return;
+        
+        resultsDiv.innerHTML = `
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem;">Search Results</h3>
+            <div class="spotify-tracks">
+                ${results.map(track => `
+                    <div class="spotify-track" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md); margin-bottom: 0.5rem; cursor: pointer;">
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 500;">${track.name}</div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">${track.artist} - ${track.album}</div>
+                        </div>
+                        <button onclick="tabletopTunes.addSpotifyTrack('${track.id}')" style="padding: 0.5rem 1rem; background: var(--spotify-green); border: none; border-radius: var(--radius-md); color: white; cursor: pointer;">
+                            Add to Playlist
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    addSpotifyTrack(trackId) {
+        this.showNotification('Track added to playlist!');
+    }
+    
+    // Visualization System
+    initializeVisualization() {
+        const vizAnalyzeBtn = document.getElementById('viz-analyze-btn');
+        if (vizAnalyzeBtn) {
+            vizAnalyzeBtn.addEventListener('click', () => this.analyzeGameVisualization());
+        }
+    }
+    
+    async analyzeGameVisualization() {
+        const gameInput = document.getElementById('viz-game-input');
+        const gameName = gameInput?.value.trim();
+        
+        if (!gameName) {
+            this.showNotification('Please enter a game name to analyze');
+            return;
+        }
+        
+        // Clear previous results
+        this.clearVisualizationPanels();
+        
+        // Start the visualization process
+        await this.runVisualizationSteps(gameName);
+    }
+    
+    clearVisualizationPanels() {
+        const panels = ['step-list', 'keyword-cloud', 'score-bars', 'result-display'];
+        panels.forEach(panelId => {
+            const panel = document.getElementById(panelId);
+            if (panel) {
+                panel.innerHTML = '<p class="placeholder">Analysis in progress...</p>';
+            }
+        });
+    }
+    
+    async runVisualizationSteps(gameName) {
+        // Step 1: Show analysis steps
+        await this.showAnalysisSteps(gameName);
+        
+        // Step 2: Extract and show keywords
+        await this.showKeywordAnalysis(gameName);
+        
+        // Step 3: Show category scoring
+        await this.showCategoryScoring(gameName);
+        
+        // Step 4: Show final recommendation
+        await this.showFinalRecommendation(gameName);
+    }
+    
+    async showAnalysisSteps(gameName) {
+        const stepList = document.getElementById('step-list');
+        if (!stepList) return;
+        
+        const steps = [
+            'Parsing game name input...',
+            'Normalizing text and extracting keywords...',
+            'Analyzing theme patterns...',
+            'Calculating category scores...',
+            'Selecting best match...'
+        ];
+        
+        stepList.innerHTML = '';
+        
+        for (let i = 0; i < steps.length; i++) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const stepDiv = document.createElement('div');
+            stepDiv.className = 'analysis-step';
+            stepDiv.style.animationDelay = `${i * 0.1}s`;
+            stepDiv.textContent = `${i + 1}. ${steps[i]}`;
+            stepList.appendChild(stepDiv);
+        }
+    }
+    
+    async showKeywordAnalysis(gameName) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const keywordCloud = document.getElementById('keyword-cloud');
+        if (!keywordCloud) return;
+        
+        // Extract keywords from game name (simplified)
+        const keywords = this.extractKeywords(gameName);
+        
+        keywordCloud.innerHTML = '';
+        keywords.forEach((keyword, index) => {
+            setTimeout(() => {
+                const keywordTag = document.createElement('span');
+                keywordTag.className = 'keyword-tag';
+                keywordTag.textContent = keyword;
+                keywordCloud.appendChild(keywordTag);
+            }, index * 200);
+        });
+    }
+    
+    extractKeywords(gameName) {
+        const name = gameName.toLowerCase();
+        const keywords = [];
+        
+        // Simple keyword extraction based on game name
+        if (name.includes('dragon') || name.includes('magic') || name.includes('fantasy')) {
+            keywords.push('fantasy', 'magic', 'medieval');
+        }
+        if (name.includes('space') || name.includes('star') || name.includes('cyber')) {
+            keywords.push('sci-fi', 'futuristic', 'technology');
+        }
+        if (name.includes('horror') || name.includes('zombie') || name.includes('haunted')) {
+            keywords.push('horror', 'suspense', 'dark');
+        }
+        if (name.includes('adventure') || name.includes('quest') || name.includes('journey')) {
+            keywords.push('adventure', 'exploration', 'heroic');
+        }
+        
+        // Add generic keywords
+        const words = name.split(' ');
+        keywords.push(...words.filter(word => word.length > 3));
+        
+        return [...new Set(keywords)].slice(0, 8); // Remove duplicates, limit to 8
+    }
+    
+    async showCategoryScoring(gameName) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const scoreBars = document.getElementById('score-bars');
+        if (!scoreBars) return;
+        
+        // Calculate scores using existing logic
+        const result = this.suggestByTheme(gameName);
+        const scores = this.calculateAllCategoryScores(gameName);
+        
+        scoreBars.innerHTML = '';
+        
+        Object.entries(scores).forEach(([category, score], index) => {
+            setTimeout(() => {
+                const barDiv = document.createElement('div');
+                barDiv.className = 'score-bar';
+                barDiv.innerHTML = `
+                    <div class="bar-label">${category}</div>
+                    <div class="bar-fill">
+                        <div class="bar-progress" style="width: ${score}%"></div>
+                    </div>
+                    <div class="bar-score">${score}%</div>
+                `;
+                scoreBars.appendChild(barDiv);
+            }, index * 300);
+        });
+    }
+    
+    calculateAllCategoryScores(gameName) {
+        const name = gameName.toLowerCase();
+        const scores = {
+            fantasy: 0,
+            horror: 0,
+            scifi: 0,
+            adventure: 0,
+            ambient: 0,
+            tavern: 0
+        };
+        
+        // Fantasy keywords
+        if (name.includes('fantasy') || name.includes('magic') || name.includes('dragon')) scores.fantasy += 80;
+        if (name.includes('medieval') || name.includes('castle') || name.includes('knight')) scores.fantasy += 60;
+        
+        // Horror keywords
+        if (name.includes('horror') || name.includes('zombie') || name.includes('scary')) scores.horror += 90;
+        if (name.includes('haunted') || name.includes('ghost') || name.includes('dark')) scores.horror += 70;
+        
+        // Sci-fi keywords
+        if (name.includes('space') || name.includes('sci') || name.includes('robot')) scores.scifi += 85;
+        if (name.includes('cyber') || name.includes('future') || name.includes('alien')) scores.scifi += 75;
+        
+        // Adventure keywords
+        if (name.includes('adventure') || name.includes('explore') || name.includes('quest')) scores.adventure += 75;
+        if (name.includes('journey') || name.includes('expedition') || name.includes('discovery')) scores.adventure += 60;
+        
+        // Ambient keywords
+        if (name.includes('peaceful') || name.includes('calm') || name.includes('nature')) scores.ambient += 70;
+        if (name.includes('zen') || name.includes('meditation') || name.includes('serene')) scores.ambient += 80;
+        
+        // Tavern keywords
+        if (name.includes('tavern') || name.includes('inn') || name.includes('social')) scores.tavern += 85;
+        if (name.includes('party') || name.includes('gathering') || name.includes('feast')) scores.tavern += 65;
+        
+        // Add base scores to prevent all zeros
+        Object.keys(scores).forEach(key => {
+            if (scores[key] === 0) scores[key] = Math.floor(Math.random() * 30) + 10;
+        });
+        
+        return scores;
+    }
+    
+    async showFinalRecommendation(gameName) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const resultDisplay = document.getElementById('result-display');
+        if (!resultDisplay) return;
+        
+        const result = this.suggestByTheme(gameName);
+        
+        if (result) {
+            resultDisplay.innerHTML = `
+                <div class="recommendation-card">
+                    <h4>${result.category.charAt(0).toUpperCase() + result.category.slice(1)} Category Selected</h4>
+                    <p>${result.reason}</p>
+                    <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                        ${result.tracks.length} tracks available in this category
+                    </div>
+                </div>
+            `;
+        } else {
+            resultDisplay.innerHTML = `
+                <div class="recommendation-card">
+                    <h4>No Specific Match Found</h4>
+                    <p>Try browsing categories or popular games for suggestions.</p>
+                </div>
+            `;
+        }
     }
     
     initializeElectronIntegration() {
