@@ -1565,7 +1565,7 @@ class TabletopTunes {
                             <p class="suggestion-reason">${suggestion.reason}</p>
                         </div>
                         <div class="suggested-tracks">
-                            ${suggestion.tracks.map((track, trackIndex) => `
+                            ${(suggestion.tracks || []).map((track, trackIndex) => `
                                 <div class="suggested-track" onclick="event.stopPropagation(); tabletopTunes.playMovieTrack('${suggestion.movie}', '${track}', ${trackIndex})">
                                     <span class="track-name">${track}</span>
                                     <span class="track-source">from ${suggestion.movie}</span>
@@ -1712,7 +1712,7 @@ class TabletopTunes {
                         </div>
                         <p class="suggestion-reason">${suggestion.reason}</p>
                         <div class="suggested-tracks">
-                            ${suggestion.tracks.map((track, trackIndex) => `
+                            ${(suggestion.tracks || []).map((track, trackIndex) => `
                                 <div class="suggested-track" onclick="event.stopPropagation(); tabletopTunes.playBGGMovieTrack('${suggestion.movie}', '${track}', ${trackIndex}, '${bggGame.name}')">
                                     <span class="track-name">${track}</span>
                                     <span class="track-source">from ${suggestion.movie}</span>
