@@ -198,44 +198,124 @@
             <!-- Games Closet Tab Content -->
             <div class="tab-content" id="games-closet-tab">
                 <div class="games-closet-section">
-                    <h2><i class="fas fa-archive"></i> Your Games Closet</h2>
-                    <p class="section-intro">Keep track of your favorite board games and the playlists you've used with them. Games are automatically added here when you save playlists.</p>
+                    <div class="closet-header">
+                        <div class="header-content">
+                            <h1><i class="fas fa-archive"></i> Your Games Closet</h1>
+                            <p class="section-intro">Your personalized collection of board games with curated soundtracks and play history.</p>
+                        </div>
+                        <div class="header-actions">
+                            <button class="action-btn primary" onclick="tabletopTunes.switchTab('main')">
+                                <i class="fas fa-plus"></i> Add New Game
+                            </button>
+                            <button class="action-btn secondary" onclick="tabletopTunes.showBulkActions()">
+                                <i class="fas fa-cog"></i> Manage
+                            </button>
+                        </div>
+                    </div>
                     
-                    <div class="closet-stats">
-                        <div class="stat-card">
-                            <i class="fas fa-dice-d20"></i>
+                    <!-- Enhanced Stats Dashboard -->
+                    <div class="closet-dashboard">
+                        <div class="stat-card primary">
+                            <div class="stat-icon">
+                                <i class="fas fa-dice-d20"></i>
+                            </div>
                             <div class="stat-info">
                                 <span class="stat-number" id="total-games">0</span>
-                                <span class="stat-label">Saved Games</span>
+                                <span class="stat-label">Games Collected</span>
+                                <div class="stat-trend" id="games-trend">
+                                    <i class="fas fa-arrow-up"></i> <span>+0 this month</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="stat-card">
-                            <i class="fas fa-play"></i>
+                        <div class="stat-card success">
+                            <div class="stat-icon">
+                                <i class="fas fa-play-circle"></i>
+                            </div>
                             <div class="stat-info">
                                 <span class="stat-number" id="total-sessions">0</span>
                                 <span class="stat-label">Play Sessions</span>
+                                <div class="stat-trend" id="sessions-trend">
+                                    <i class="fas fa-clock"></i> <span id="recent-activity">No recent activity</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="stat-card">
-                            <i class="fas fa-list"></i>
+                        <div class="stat-card info">
+                            <div class="stat-icon">
+                                <i class="fas fa-music"></i>
+                            </div>
                             <div class="stat-info">
                                 <span class="stat-number" id="total-playlists">0</span>
-                                <span class="stat-label">Unique Playlists</span>
+                                <span class="stat-label">Soundtracks Used</span>
+                                <div class="stat-trend" id="playlists-trend">
+                                    <i class="fas fa-star"></i> <span id="favorite-genre">Various genres</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-icon">
+                                <i class="fas fa-crown"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="most-played-count">0</span>
+                                <span class="stat-label">Most Played</span>
+                                <div class="stat-trend" id="most-played-game">
+                                    <i class="fas fa-trophy"></i> <span>No games yet</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filter Controls -->
+                    <div class="closet-controls">
+                        <div class="search-controls">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="game-filter" placeholder="Search your games..." oninput="tabletopTunes.filterGames(this.value)">
+                                <button class="clear-search" onclick="tabletopTunes.clearFilter()" style="display: none;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="filter-controls">
+                            <select id="sort-games" onchange="tabletopTunes.sortGames(this.value)">
+                                <option value="recent">Recently Played</option>
+                                <option value="alphabetical">A to Z</option>
+                                <option value="play-count">Most Played</option>
+                                <option value="date-added">Date Added</option>
+                            </select>
+                            <div class="view-toggle">
+                                <button class="view-btn active" data-view="grid" onclick="tabletopTunes.setView('grid')">
+                                    <i class="fas fa-th"></i>
+                                </button>
+                                <button class="view-btn" data-view="list" onclick="tabletopTunes.setView('list')">
+                                    <i class="fas fa-list"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="closet-actions">
-                        <button class="action-btn primary" onclick="tabletopTunes.switchTab('main')">
-                            <i class="fas fa-plus"></i> Add New Game
-                        </button>
-                        <button class="action-btn secondary" onclick="tabletopTunes.displayGamesCloset()">
-                            <i class="fas fa-sync"></i> Refresh
-                        </button>
-                    </div>
-                    
+                    <!-- Game Collection Display -->
                     <div id="games-closet-content" class="games-closet-content">
                         <!-- Games will be loaded here dynamically -->
+                    </div>
+
+                    <!-- Quick Actions Panel -->
+                    <div class="quick-actions" id="quick-actions" style="display: none;">
+                        <h3>Quick Actions</h3>
+                        <div class="quick-buttons">
+                            <button class="quick-btn" onclick="tabletopTunes.exportGamesData()">
+                                <i class="fas fa-download"></i> Export Collection
+                            </button>
+                            <button class="quick-btn" onclick="tabletopTunes.importGamesData()">
+                                <i class="fas fa-upload"></i> Import Games
+                            </button>
+                            <button class="quick-btn" onclick="tabletopTunes.generateReport()">
+                                <i class="fas fa-chart-bar"></i> Play Report
+                            </button>
+                            <button class="quick-btn danger" onclick="tabletopTunes.clearAllGames()">
+                                <i class="fas fa-trash"></i> Clear All
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

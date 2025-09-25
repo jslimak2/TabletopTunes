@@ -1296,69 +1296,174 @@ class TabletopTunes {
         const gamesClosetContent = document.getElementById('games-closet-content');
         if (!gamesClosetContent) return;
         
+        // Update dashboard stats first
+        this.updateClosetDashboard();
+        
         const savedGamesList = Object.values(this.savedGames)
             .sort((a, b) => new Date(b.lastPlayed || b.dateAdded) - new Date(a.lastPlayed || a.dateAdded));
         
         if (savedGamesList.length === 0) {
             gamesClosetContent.innerHTML = `
                 <div class="empty-games-closet">
-                    <i class="fas fa-dice-d20" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
-                    <h3>Your Games Closet is Empty</h3>
-                    <p>Search for games and play them with playlists to automatically add them here!</p>
-                    <p>You can also manually add games by clicking "Add to Games Closet" when viewing game recommendations.</p>
+                    <div class="empty-state-icon">
+                        <i class="fas fa-dice-d20"></i>
+                    </div>
+                    <h3>Start Your Gaming Journey</h3>
+                    <p>Your games closet is waiting for its first adventure! When you search for board games and find soundtracks, they'll automatically be saved here.</p>
+                    <div class="empty-state-actions">
+                        <button class="action-btn primary large" onclick="tabletopTunes.switchTab('main')">
+                            <i class="fas fa-search"></i> Find Your First Game
+                        </button>
+                        <button class="action-btn secondary" onclick="tabletopTunes.showSampleGames()">
+                            <i class="fas fa-lightbulb"></i> Try Sample Games
+                        </button>
+                    </div>
+                    <div class="sample-games-preview">
+                        <p>Popular games to get started:</p>
+                        <div class="sample-chips">
+                            <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Gloomhaven')">Gloomhaven</span>
+                            <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Pandemic')">Pandemic</span>
+                            <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Scythe')">Scythe</span>
+                        </div>
+                    </div>
                 </div>
             `;
             return;
         }
         
-        let html = '<div class="saved-games-grid">';
+        const currentView = this.currentGamesView || 'grid';
+        const currentSort = this.currentGamesSort || 'recent';
+        const filterText = this.currentFilter || '';
         
-        savedGamesList.forEach(game => {
-            const gameHistory = this.gamePlaylistHistory[game.name] || { playlists: {}, popularPlaylists: [] };
-            const playlistCount = Object.keys(gameHistory.playlists).length;
-            const popularPlaylists = gameHistory.popularPlaylists.slice(0, 3);
-            
+        // Filter games based on search
+        let filteredGames = savedGamesList;
+        if (filterText) {
+            filteredGames = savedGamesList.filter(game => 
+                game.name.toLowerCase().includes(filterText.toLowerCase())
+            );
+        }
+        
+        // Sort games
+        filteredGames = this.sortGamesList(filteredGames, currentSort);
+        
+        let html = `<div class="saved-games ${currentView}">`;
+        
+        if (filteredGames.length === 0 && filterText) {
             html += `
-                <div class="saved-game-card" data-game="${game.name}">
-                    <div class="game-card-header">
-                        <h4>${game.name}</h4>
-                        <button class="remove-game-btn" onclick="tabletopTunes.removeFromGamesCloset('${game.name}')" title="Remove from Games Closet">
-                            <i class="fas fa-times"></i>
+                <div class="no-filtering-results">
+                    <i class="fas fa-search"></i>
+                    <h4>No games found matching "${filterText}"</h4>
+                    <p>Try adjusting your search terms or browse all games.</p>
+                    <button class="action-btn secondary" onclick="tabletopTunes.clearFilter()">
+                        <i class="fas fa-times"></i> Clear Filter
+                    </button>
+                </div>
+            `;
+        } else {
+            filteredGames.forEach((game, index) => {
+                html += this.renderGameCard(game, index, currentView);
+            });
+        }
+        
+        html += '</div>';
+        
+        // Add pagination if we have many games
+        if (savedGamesList.length > 20) {
+            html += this.renderPagination(filteredGames.length);
+        }
+        
+        gamesClosetContent.innerHTML = html;
+        
+        // Update filter controls
+        this.updateFilterControls(filterText, currentSort, currentView);
+    }
+
+    renderGameCard(game, index, view) {
+        const gameHistory = this.gamePlaylistHistory[game.name] || { playlists: {}, popularPlaylists: [] };
+        const playlistCount = Object.keys(gameHistory.playlists).length;
+        const popularPlaylists = gameHistory.popularPlaylists.slice(0, 3);
+        const timeSinceLastPlayed = game.lastPlayed ? this.getTimeSince(new Date(game.lastPlayed)) : null;
+        const gameThemes = game.detectedCategory ? [game.detectedCategory] : (game.themes || []);
+        
+        if (view === 'list') {
+            return `
+                <div class="saved-game-item list-item" data-game="${game.name}" data-index="${index}">
+                    <div class="game-basic-info">
+                        <div class="game-icon">
+                            <i class="fas fa-dice-d6"></i>
+                        </div>
+                        <div class="game-details">
+                            <h4 class="game-name">${game.name}</h4>
+                            <div class="game-meta">
+                                ${gameThemes.length > 0 ? `<span class="theme-tag">${gameThemes[0]}</span>` : ''}
+                                <span class="play-stats">${game.playCount || 0} plays</span>
+                                ${timeSinceLastPlayed ? `<span class="last-played">Last: ${timeSinceLastPlayed}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="game-quick-actions">
+                        <button class="quick-action-btn" onclick="tabletopTunes.loadGameFromCloset('${game.name}')" title="Find Soundtracks">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="quick-action-btn" onclick="tabletopTunes.showGamePlaylists('${game.name}')" title="View Playlists">
+                            <i class="fas fa-list"></i>
+                            <span class="badge">${playlistCount}</span>
+                        </button>
+                        <button class="quick-action-btn danger" onclick="tabletopTunes.removeFromGamesCloset('${game.name}')" title="Remove">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
+                </div>
+            `;
+        }
+        
+        // Grid view (enhanced)
+        return `
+            <div class="saved-game-card enhanced" data-game="${game.name}" data-index="${index}">
+                <div class="card-header">
+                    <div class="game-avatar">
+                        <i class="fas fa-dice-d20"></i>
+                        ${game.isFavorite ? '<div class="favorite-badge"><i class="fas fa-star"></i></div>' : ''}
+                    </div>
+                    <button class="card-menu-btn" onclick="tabletopTunes.toggleGameMenu('${game.name}')">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                </div>
+                
+                <div class="card-content">
+                    <h4 class="game-title">${game.name}</h4>
                     
-                    <div class="game-stats">
-                        <span class="stat-item">
-                            <i class="fas fa-play"></i> 
-                            Played ${game.playCount || 0} time${(game.playCount || 0) !== 1 ? 's' : ''}
-                        </span>
-                        <span class="stat-item">
-                            <i class="fas fa-list"></i> 
-                            ${playlistCount} playlist${playlistCount !== 1 ? 's' : ''} used
-                        </span>
-                        ${game.lastPlayed ? `
-                            <span class="stat-item">
-                                <i class="fas fa-clock"></i> 
-                                Last played: ${new Date(game.lastPlayed).toLocaleDateString()}
-                            </span>
+                    <div class="game-stats-grid">
+                        <div class="stat-item">
+                            <i class="fas fa-play-circle"></i>
+                            <span>${game.playCount || 0} plays</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-music"></i>
+                            <span>${playlistCount} soundtracks</span>
+                        </div>
+                        ${timeSinceLastPlayed ? `
+                            <div class="stat-item full-width">
+                                <i class="fas fa-clock"></i>
+                                <span>Last played ${timeSinceLastPlayed}</span>
+                            </div>
                         ` : ''}
                     </div>
                     
-                    <div class="game-actions">
-                        <button class="action-btn primary" onclick="tabletopTunes.loadGameFromCloset('${game.name}')">
-                            <i class="fas fa-search"></i> Find Soundtracks
-                        </button>
-                        <button class="action-btn secondary" onclick="tabletopTunes.showGamePlaylists('${game.name}')">
-                            <i class="fas fa-history"></i> View Playlists (${playlistCount})
-                        </button>
-                    </div>
+                    ${gameThemes.length > 0 ? `
+                        <div class="game-themes">
+                            ${gameThemes.slice(0, 3).map(theme => `
+                                <span class="theme-badge ${theme}">${theme}</span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
                     
                     ${popularPlaylists.length > 0 ? `
-                        <div class="popular-playlists">
-                            <h5>Popular Playlists:</h5>
-                            <div class="playlist-chips">
+                        <div class="popular-soundtracks">
+                            <h6>Recent Soundtracks:</h6>
+                            <div class="soundtrack-chips">
                                 ${popularPlaylists.map(playlistName => `
-                                    <span class="playlist-chip" onclick="tabletopTunes.loadGamePlaylist('${game.name}', '${playlistName}')">
+                                    <span class="soundtrack-chip" onclick="tabletopTunes.loadGamePlaylist('${game.name}', '${playlistName}')">
                                         ${playlistName}
                                     </span>
                                 `).join('')}
@@ -1366,11 +1471,408 @@ class TabletopTunes {
                         </div>
                     ` : ''}
                 </div>
-            `;
+                
+                <div class="card-actions">
+                    <button class="action-btn primary" onclick="tabletopTunes.loadGameFromCloset('${game.name}')">
+                        <i class="fas fa-play"></i> Play Soundtracks
+                    </button>
+                    <button class="action-btn secondary" onclick="tabletopTunes.showGameDetails('${game.name}')">
+                        <i class="fas fa-info-circle"></i> Details
+                    </button>
+                </div>
+                
+                <div class="card-menu" id="menu-${game.name}" style="display: none;">
+                    <button onclick="tabletopTunes.toggleFavorite('${game.name}')">
+                        <i class="fas fa-star"></i> ${game.isFavorite ? 'Remove from' : 'Add to'} Favorites
+                    </button>
+                    <button onclick="tabletopTunes.showGamePlaylists('${game.name}')">
+                        <i class="fas fa-history"></i> View All Playlists
+                    </button>
+                    <button onclick="tabletopTunes.duplicateGame('${game.name}')">
+                        <i class="fas fa-copy"></i> Duplicate
+                    </button>
+                    <button onclick="tabletopTunes.exportGame('${game.name}')">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                    <button class="danger" onclick="tabletopTunes.removeFromGamesCloset('${game.name}')">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    updateClosetDashboard() {
+        const games = Object.values(this.savedGames);
+        const totalGames = games.length;
+        const totalSessions = games.reduce((sum, game) => sum + (game.playCount || 0), 0);
+        const totalPlaylists = Object.keys(this.gamePlaylistHistory).reduce((sum, gameName) => {
+            return sum + Object.keys(this.gamePlaylistHistory[gameName]?.playlists || {}).length;
+        }, 0);
+        
+        // Find most played game
+        const mostPlayed = games.reduce((max, game) => 
+            (game.playCount || 0) > (max.playCount || 0) ? game : max, 
+            { name: 'No games yet', playCount: 0 }
+        );
+        
+        // Update dashboard elements
+        document.getElementById('total-games').textContent = totalGames;
+        document.getElementById('total-sessions').textContent = totalSessions;
+        document.getElementById('total-playlists').textContent = totalPlaylists;
+        document.getElementById('most-played-count').textContent = mostPlayed.playCount || 0;
+        
+        // Update trends
+        const recentActivity = this.getRecentActivity();
+        document.getElementById('recent-activity').textContent = recentActivity;
+        document.getElementById('most-played-game').textContent = mostPlayed.name;
+        
+        // Update month stats (simplified)
+        const gamesThisMonth = games.filter(game => {
+            const addedDate = new Date(game.dateAdded);
+            const now = new Date();
+            return addedDate.getMonth() === now.getMonth() && addedDate.getFullYear() === now.getFullYear();
+        }).length;
+        
+        document.getElementById('games-trend').innerHTML = `
+            <i class="fas fa-arrow-up"></i> <span>+${gamesThisMonth} this month</span>
+        `;
+        
+        // Determine favorite genre
+        const genres = {};
+        games.forEach(game => {
+            const category = game.detectedCategory || 'ambient';
+            genres[category] = (genres[category] || 0) + 1;
         });
         
-        html += '</div>';
-        gamesClosetContent.innerHTML = html;
+        const favoriteGenre = Object.keys(genres).reduce((a, b) => genres[a] > genres[b] ? a : b, 'Various genres');
+        document.getElementById('favorite-genre').textContent = favoriteGenre;
+    }
+    
+    // Helper functions for enhanced games closet
+    getTimeSince(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) return 'today';
+        if (diffDays === 1) return 'yesterday';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+        if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+        return `${Math.floor(diffDays / 365)} years ago`;
+    }
+    
+    getRecentActivity() {
+        const games = Object.values(this.savedGames);
+        const recentGames = games.filter(game => {
+            if (!game.lastPlayed) return false;
+            const daysSince = (new Date() - new Date(game.lastPlayed)) / (1000 * 60 * 60 * 24);
+            return daysSince <= 7;
+        });
+        
+        if (recentGames.length === 0) return 'No recent activity';
+        if (recentGames.length === 1) return `1 game this week`;
+        return `${recentGames.length} games this week`;
+    }
+    
+    sortGamesList(games, sortType) {
+        switch (sortType) {
+            case 'alphabetical':
+                return games.sort((a, b) => a.name.localeCompare(b.name));
+            case 'play-count':
+                return games.sort((a, b) => (b.playCount || 0) - (a.playCount || 0));
+            case 'date-added':
+                return games.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+            case 'recent':
+            default:
+                return games.sort((a, b) => new Date(b.lastPlayed || b.dateAdded) - new Date(a.lastPlayed || a.dateAdded));
+        }
+    }
+    
+    filterGames(searchText) {
+        this.currentFilter = searchText;
+        this.displayGamesCloset();
+        
+        // Update clear button visibility
+        const clearBtn = document.querySelector('.clear-search');
+        if (clearBtn) {
+            clearBtn.style.display = searchText ? 'block' : 'none';
+        }
+    }
+    
+    clearFilter() {
+        this.currentFilter = '';
+        document.getElementById('game-filter').value = '';
+        this.displayGamesCloset();
+    }
+    
+    sortGames(sortType) {
+        this.currentGamesSort = sortType;
+        this.displayGamesCloset();
+    }
+    
+    setView(viewType) {
+        this.currentGamesView = viewType;
+        document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-view="${viewType}"]`).classList.add('active');
+        this.displayGamesCloset();
+    }
+    
+    updateFilterControls(filterText, sortType, viewType) {
+        const sortSelect = document.getElementById('sort-games');
+        if (sortSelect) sortSelect.value = sortType;
+        
+        const gameFilter = document.getElementById('game-filter');
+        if (gameFilter) gameFilter.value = filterText;
+        
+        const clearBtn = document.querySelector('.clear-search');
+        if (clearBtn) clearBtn.style.display = filterText ? 'block' : 'none';
+    }
+    
+    renderPagination(totalItems) {
+        // Simple pagination for large collections
+        const itemsPerPage = 20;
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        
+        if (totalPages <= 1) return '';
+        
+        return `
+            <div class="pagination">
+                <span class="pagination-info">Showing ${totalItems} games</span>
+                <div class="pagination-controls">
+                    <button class="page-btn" onclick="tabletopTunes.previousPage()" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="page-indicator">1 of ${totalPages}</span>
+                    <button class="page-btn" onclick="tabletopTunes.nextPage()">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    // New enhanced features for games closet
+    showBulkActions() {
+        const quickActions = document.getElementById('quick-actions');
+        if (quickActions) {
+            quickActions.style.display = quickActions.style.display === 'none' ? 'block' : 'none';
+        }
+    }
+    
+    showSampleGames() {
+        const sampleGames = ['Gloomhaven', 'Pandemic', 'Scythe', 'Wingspan', 'Azul'];
+        sampleGames.forEach(gameName => {
+            this.saveToGamesCloset(gameName, { 
+                source: 'sample',
+                detectedCategory: 'adventure'
+            });
+        });
+        this.displayGamesCloset();
+        this.showNotification('Added sample games to your closet!', 'success');
+    }
+    
+    toggleGameMenu(gameName) {
+        const menu = document.getElementById(`menu-${gameName}`);
+        if (menu) {
+            // Close all other menus first
+            document.querySelectorAll('.card-menu').forEach(m => {
+                if (m !== menu) m.style.display = 'none';
+            });
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+    }
+    
+    toggleFavorite(gameName) {
+        if (this.savedGames[gameName]) {
+            this.savedGames[gameName].isFavorite = !this.savedGames[gameName].isFavorite;
+            this.saveUserData();
+            this.displayGamesCloset();
+            this.showNotification(
+                `${gameName} ${this.savedGames[gameName].isFavorite ? 'added to' : 'removed from'} favorites!`, 
+                'success'
+            );
+        }
+    }
+    
+    showGameDetails(gameName) {
+        const game = this.savedGames[gameName];
+        if (!game) return;
+        
+        const gameHistory = this.gamePlaylistHistory[gameName] || { playlists: {}, popularPlaylists: [] };
+        const detailsHtml = `
+            <div class="game-details-modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-dice-d20"></i> ${gameName}</h2>
+                        <button class="close-modal" onclick="tabletopTunes.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="detail-section">
+                            <h4>Play Statistics</h4>
+                            <div class="stats-grid">
+                                <div class="stat"><label>Total Plays:</label> <span>${game.playCount || 0}</span></div>
+                                <div class="stat"><label>Date Added:</label> <span>${new Date(game.dateAdded).toLocaleDateString()}</span></div>
+                                <div class="stat"><label>Last Played:</label> <span>${game.lastPlayed ? new Date(game.lastPlayed).toLocaleDateString() : 'Never'}</span></div>
+                                <div class="stat"><label>Category:</label> <span>${game.detectedCategory || 'Unknown'}</span></div>
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <h4>Soundtrack History</h4>
+                            <div class="playlist-history">
+                                ${Object.keys(gameHistory.playlists).length > 0 ? 
+                                    Object.entries(gameHistory.playlists).map(([playlist, count]) => 
+                                        `<div class="playlist-entry">
+                                            <span class="playlist-name">${playlist}</span>
+                                            <span class="usage-count">Used ${count} times</span>
+                                        </div>`
+                                    ).join('') : 
+                                    '<p>No soundtrack history yet.</p>'
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="action-btn primary" onclick="tabletopTunes.loadGameFromCloset('${gameName}'); tabletopTunes.closeModal();">
+                            <i class="fas fa-play"></i> Play Soundtracks
+                        </button>
+                        <button class="action-btn secondary" onclick="tabletopTunes.closeModal()">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Create modal backdrop
+        const modalBackdrop = document.createElement('div');
+        modalBackdrop.className = 'modal-backdrop';
+        modalBackdrop.innerHTML = detailsHtml;
+        document.body.appendChild(modalBackdrop);
+    }
+    
+    closeModal() {
+        const modal = document.querySelector('.modal-backdrop');
+        if (modal) {
+            modal.remove();
+        }
+    }
+    
+    exportGamesData() {
+        const data = {
+            games: this.savedGames,
+            gameHistory: this.gamePlaylistHistory,
+            exportDate: new Date().toISOString()
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tabletop-tunes-games-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        this.showNotification('Games data exported successfully!', 'success');
+    }
+    
+    importGamesData() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.games) {
+                        // Merge imported games
+                        Object.assign(this.savedGames, data.games);
+                        if (data.gameHistory) {
+                            Object.assign(this.gamePlaylistHistory, data.gameHistory);
+                        }
+                        this.saveUserData();
+                        this.displayGamesCloset();
+                        this.showNotification('Games imported successfully!', 'success');
+                    }
+                } catch (error) {
+                    this.showNotification('Error importing games data', 'error');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+    
+    generateReport() {
+        const games = Object.values(this.savedGames);
+        const totalPlays = games.reduce((sum, game) => sum + (game.playCount || 0), 0);
+        const mostPlayed = games.reduce((max, game) => 
+            (game.playCount || 0) > (max.playCount || 0) ? game : max, 
+            { name: 'None', playCount: 0 }
+        );
+        
+        const reportHtml = `
+            <div class="game-report-modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-chart-bar"></i> Your Gaming Report</h2>
+                        <button class="close-modal" onclick="tabletopTunes.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="report-stats">
+                            <div class="report-card">
+                                <h3>${games.length}</h3>
+                                <label>Games in Collection</label>
+                            </div>
+                            <div class="report-card">
+                                <h3>${totalPlays}</h3>
+                                <label>Total Play Sessions</label>
+                            </div>
+                            <div class="report-card">
+                                <h3>${mostPlayed.name}</h3>
+                                <label>Most Played Game</label>
+                            </div>
+                        </div>
+                        <div class="report-details">
+                            <h4>Collection Insights</h4>
+                            <p>You've been building an impressive collection! Keep exploring new games and soundtracks.</p>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="action-btn primary" onclick="tabletopTunes.exportGamesData(); tabletopTunes.closeModal();">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                        <button class="action-btn secondary" onclick="tabletopTunes.closeModal()">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const modalBackdrop = document.createElement('div');
+        modalBackdrop.className = 'modal-backdrop';
+        modalBackdrop.innerHTML = reportHtml;
+        document.body.appendChild(modalBackdrop);
+    }
+    
+    clearAllGames() {
+        if (confirm('Are you sure you want to remove all games from your closet? This action cannot be undone.')) {
+            this.savedGames = {};
+            this.gamePlaylistHistory = {};
+            this.saveUserData();
+            this.displayGamesCloset();
+            this.showNotification('All games cleared from closet', 'success');
+        }
     }
     
     loadGameFromCloset(gameName) {
@@ -2078,6 +2580,21 @@ class TabletopTunes {
         
         if (categoryTitle) categoryTitle.textContent = `Theme-Based Suggestions for ${gameName}`;
         
+        // Add null safety checks
+        if (!result) {
+            trackList.innerHTML = '<p class="error-message">Unable to generate theme-based suggestions</p>';
+            return;
+        }
+        
+        // Ensure required properties exist with fallbacks
+        const safeResult = {
+            reason: result.reason || 'Theme analysis completed',
+            confidence: result.confidence || 50,
+            detectedKeywords: result.detectedKeywords || [],
+            category: result.category || 'ambient',
+            tracks: result.tracks || []
+        };
+        
         let html = `<div class="game-suggestions theme-suggestions">`;
         
         // Add theme analysis info
@@ -2091,19 +2608,19 @@ class TabletopTunes {
                 </div>
                 
                 <div class="analysis-details">
-                    <p class="analysis-reason">${result.reason}</p>
+                    <p class="analysis-reason">${safeResult.reason}</p>
                     <div class="confidence-meter">
-                        <span class="confidence-label">Confidence: ${result.confidence}%</span>
+                        <span class="confidence-label">Confidence: ${safeResult.confidence}%</span>
                         <div class="confidence-bar">
-                            <div class="confidence-fill" style="width: ${result.confidence}%"></div>
+                            <div class="confidence-fill" style="width: ${safeResult.confidence}%"></div>
                         </div>
                     </div>
                 </div>
                 
-                ${result.detectedKeywords && result.detectedKeywords.length > 0 ? `
+                ${safeResult.detectedKeywords.length > 0 ? `
                     <div class="detected-keywords">
                         <strong>Detected Keywords:</strong> 
-                        ${result.detectedKeywords.slice(0, 5).map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                        ${safeResult.detectedKeywords.slice(0, 5).map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
                     </div>
                 ` : ''}
             </div>
@@ -2111,22 +2628,25 @@ class TabletopTunes {
         
         // Add category-based soundtrack suggestions
         html += `
-            <div class="category-suggestion theme-category-suggestion" onclick="tabletopTunes.selectCategory('${result.category}')">
+            <div class="category-suggestion theme-category-suggestion" onclick="tabletopTunes.selectCategory('${safeResult.category}')">
                 <div class="category-header">
-                    <h4><i class="fas fa-${this.getCategoryIcon(result.category)}"></i> ${result.category.charAt(0).toUpperCase() + result.category.slice(1)} Soundtracks</h4>
+                    <h4><i class="fas fa-${this.getCategoryIcon(safeResult.category)}"></i> ${safeResult.category.charAt(0).toUpperCase() + safeResult.category.slice(1)} Soundtracks</h4>
                     <div class="suggested-badge">
                         <i class="fas fa-magic"></i> Suggested
                     </div>
                 </div>
-                <p class="category-description">Based on theme analysis, we suggest ${result.category} soundtracks</p>
+                <p class="category-description">Based on theme analysis, we suggest ${safeResult.category} soundtracks</p>
                 <div class="sample-tracks">
-                    ${result.tracks.slice(0, 3).map(track => `
-                        <div class="sample-track">
-                            <span class="track-name">${track.name}</span>
-                            <span class="track-duration">${track.duration}</span>
-                        </div>
-                    `).join('')}
-                    ${result.tracks.length > 3 ? `<div class="more-tracks">+${result.tracks.length - 3} more tracks</div>` : ''}
+                    ${safeResult.tracks.length > 0 ? 
+                        safeResult.tracks.slice(0, 3).map(track => `
+                            <div class="sample-track">
+                                <span class="track-name">${track.name || 'Unknown Track'}</span>
+                                <span class="track-duration">${track.duration || '0:00'}</span>
+                            </div>
+                        `).join('') : 
+                        '<div class="no-tracks">No tracks available for this category</div>'
+                    }
+                    ${safeResult.tracks.length > 3 ? `<div class="more-tracks">+${safeResult.tracks.length - 3} more tracks</div>` : ''}
                 </div>
             </div>
         `;
