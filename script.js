@@ -20,6 +20,10 @@ class TabletopTunes {
         // BoardGameGeek API integration
         this.bggService = new BGGApiService();
         
+        // Games closet for saved games
+        this.savedGames = {};
+        this.gamePlaylistHistory = {};
+        
         // Mock soundtrack data (in a real app, this would come from a server or local files)
         this.soundtracks = {
             ambient: [
@@ -65,6 +69,7 @@ class TabletopTunes {
         this.initializeSpotifyIntegration();
         this.initializeVisualization();
         this.loadUserPreferences();
+        this.loadGamesCloset();
         this.updateDisplay();
         this.initializeElectronIntegration();
         this.initializeQuickActions();
@@ -99,6 +104,12 @@ class TabletopTunes {
         if (selectedTab && selectedBtn) {
             selectedTab.classList.add('active');
             selectedBtn.classList.add('active');
+            
+            // Special handling for Games Closet tab
+            if (tabName === 'games-closet') {
+                this.displayGamesCloset();
+                this.updateGamesClosetStats();
+            }
         }
     }
     
@@ -822,7 +833,8 @@ class TabletopTunes {
         this.pause();
         this.displayPlaylist();
         this.updateCurrentTrackInfo();
-        document.querySelector('.playlist-section h2').textContent = 'Current Playlist';
+        const playlistTitle = document.querySelector('.playlist-section h3');
+        if (playlistTitle) playlistTitle.textContent = 'Current Playlist';
         this.showNotification('Playlist cleared');
     }
     
@@ -1115,13 +1127,20 @@ class TabletopTunes {
             name: playlistName,
             category: this.currentCategory,
             tracks: this.currentPlaylist,
-            created: new Date().toISOString()
+            created: new Date().toISOString(),
+            boardGame: this.currentBoardGame
         };
         
         // Save to localStorage
         const savedPlaylists = JSON.parse(localStorage.getItem('tabletopTunes_playlists') || '{}');
         savedPlaylists[playlistName] = playlist;
         localStorage.setItem('tabletopTunes_playlists', JSON.stringify(savedPlaylists));
+        
+        // If we have a current board game, track this playlist usage and save game to closet
+        if (this.currentBoardGame) {
+            this.trackGamePlaylist(this.currentBoardGame, playlistName, playlist);
+            this.saveToGamesCloset(this.currentBoardGame);
+        }
         
         this.showNotification(`Playlist "${playlistName}" saved successfully!`);
         document.getElementById('playlist-name').value = '';
@@ -1185,6 +1204,297 @@ class TabletopTunes {
         localStorage.setItem('tabletopTunes_volume', document.getElementById('volume-slider').value);
         localStorage.setItem('tabletopTunes_shuffle', this.isShuffle);
         localStorage.setItem('tabletopTunes_loop', this.isLoop);
+    }
+    
+    // Games Closet functionality
+    loadGamesCloset() {
+        // Load saved games
+        const savedGamesData = localStorage.getItem('tabletopTunes_savedGames');
+        this.savedGames = savedGamesData ? JSON.parse(savedGamesData) : {};
+        
+        // Load game playlist history
+        const historyData = localStorage.getItem('tabletopTunes_gameHistory');
+        this.gamePlaylistHistory = historyData ? JSON.parse(historyData) : {};
+    }
+    
+    saveToGamesCloset(gameName, gameData = {}) {
+        if (!gameName) return;
+        
+        // Create game entry if it doesn't exist
+        if (!this.savedGames[gameName]) {
+            this.savedGames[gameName] = {
+                name: gameName,
+                dateAdded: new Date().toISOString(),
+                lastPlayed: null,
+                playCount: 0,
+                ...gameData
+            };
+        }
+        
+        // Update last played and play count
+        this.savedGames[gameName].lastPlayed = new Date().toISOString();
+        this.savedGames[gameName].playCount = (this.savedGames[gameName].playCount || 0) + 1;
+        
+        // Save to localStorage
+        localStorage.setItem('tabletopTunes_savedGames', JSON.stringify(this.savedGames));
+        
+        this.showNotification(`"${gameName}" added to Games Closet!`);
+    }
+    
+    trackGamePlaylist(gameName, playlistName, playlistData) {
+        if (!gameName || !playlistName) return;
+        
+        // Initialize game history if it doesn't exist
+        if (!this.gamePlaylistHistory[gameName]) {
+            this.gamePlaylistHistory[gameName] = {
+                playlists: {},
+                popularPlaylists: []
+            };
+        }
+        
+        // Track this playlist usage
+        const gameHistory = this.gamePlaylistHistory[gameName];
+        if (!gameHistory.playlists[playlistName]) {
+            gameHistory.playlists[playlistName] = {
+                name: playlistName,
+                timesUsed: 0,
+                lastUsed: null,
+                data: playlistData
+            };
+        }
+        
+        gameHistory.playlists[playlistName].timesUsed++;
+        gameHistory.playlists[playlistName].lastUsed = new Date().toISOString();
+        
+        // Update popular playlists (simple ranking by usage)
+        gameHistory.popularPlaylists = Object.values(gameHistory.playlists)
+            .sort((a, b) => b.timesUsed - a.timesUsed)
+            .slice(0, 5)
+            .map(p => p.name);
+        
+        // Save to localStorage
+        localStorage.setItem('tabletopTunes_gameHistory', JSON.stringify(this.gamePlaylistHistory));
+    }
+    
+    removeFromGamesCloset(gameName) {
+        if (this.savedGames[gameName]) {
+            delete this.savedGames[gameName];
+            localStorage.setItem('tabletopTunes_savedGames', JSON.stringify(this.savedGames));
+            
+            // Also remove from history
+            if (this.gamePlaylistHistory[gameName]) {
+                delete this.gamePlaylistHistory[gameName];
+                localStorage.setItem('tabletopTunes_gameHistory', JSON.stringify(this.gamePlaylistHistory));
+            }
+            
+            this.showNotification(`"${gameName}" removed from Games Closet`);
+            this.displayGamesCloset(); // Refresh display
+        }
+    }
+    
+    displayGamesCloset() {
+        const gamesClosetContent = document.getElementById('games-closet-content');
+        if (!gamesClosetContent) return;
+        
+        const savedGamesList = Object.values(this.savedGames)
+            .sort((a, b) => new Date(b.lastPlayed || b.dateAdded) - new Date(a.lastPlayed || a.dateAdded));
+        
+        if (savedGamesList.length === 0) {
+            gamesClosetContent.innerHTML = `
+                <div class="empty-games-closet">
+                    <i class="fas fa-dice-d20" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                    <h3>Your Games Closet is Empty</h3>
+                    <p>Search for games and play them with playlists to automatically add them here!</p>
+                    <p>You can also manually add games by clicking "Add to Games Closet" when viewing game recommendations.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '<div class="saved-games-grid">';
+        
+        savedGamesList.forEach(game => {
+            const gameHistory = this.gamePlaylistHistory[game.name] || { playlists: {}, popularPlaylists: [] };
+            const playlistCount = Object.keys(gameHistory.playlists).length;
+            const popularPlaylists = gameHistory.popularPlaylists.slice(0, 3);
+            
+            html += `
+                <div class="saved-game-card" data-game="${game.name}">
+                    <div class="game-card-header">
+                        <h4>${game.name}</h4>
+                        <button class="remove-game-btn" onclick="tabletopTunes.removeFromGamesCloset('${game.name}')" title="Remove from Games Closet">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="game-stats">
+                        <span class="stat-item">
+                            <i class="fas fa-play"></i> 
+                            Played ${game.playCount || 0} time${(game.playCount || 0) !== 1 ? 's' : ''}
+                        </span>
+                        <span class="stat-item">
+                            <i class="fas fa-list"></i> 
+                            ${playlistCount} playlist${playlistCount !== 1 ? 's' : ''} used
+                        </span>
+                        ${game.lastPlayed ? `
+                            <span class="stat-item">
+                                <i class="fas fa-clock"></i> 
+                                Last played: ${new Date(game.lastPlayed).toLocaleDateString()}
+                            </span>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="game-actions">
+                        <button class="action-btn primary" onclick="tabletopTunes.loadGameFromCloset('${game.name}')">
+                            <i class="fas fa-search"></i> Find Soundtracks
+                        </button>
+                        <button class="action-btn secondary" onclick="tabletopTunes.showGamePlaylists('${game.name}')">
+                            <i class="fas fa-history"></i> View Playlists (${playlistCount})
+                        </button>
+                    </div>
+                    
+                    ${popularPlaylists.length > 0 ? `
+                        <div class="popular-playlists">
+                            <h5>Popular Playlists:</h5>
+                            <div class="playlist-chips">
+                                ${popularPlaylists.map(playlistName => `
+                                    <span class="playlist-chip" onclick="tabletopTunes.loadGamePlaylist('${game.name}', '${playlistName}')">
+                                        ${playlistName}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        gamesClosetContent.innerHTML = html;
+    }
+    
+    loadGameFromCloset(gameName) {
+        // Switch to main tab and perform search
+        this.switchTab('main');
+        document.getElementById('game-search').value = gameName;
+        this.performGameSearch();
+    }
+    
+    showGamePlaylists(gameName) {
+        const gameHistory = this.gamePlaylistHistory[gameName];
+        if (!gameHistory || Object.keys(gameHistory.playlists).length === 0) {
+            this.showNotification(`No playlists found for ${gameName}`);
+            return;
+        }
+        
+        // Create modal or expand section to show playlists
+        const playlists = Object.values(gameHistory.playlists)
+            .sort((a, b) => b.timesUsed - a.timesUsed);
+        
+        let html = `
+            <div class="game-playlists-modal">
+                <div class="modal-header">
+                    <h3><i class="fas fa-dice-d20"></i> ${gameName} - Playlist History</h3>
+                    <button class="close-modal" onclick="this.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="playlists-list">
+        `;
+        
+        playlists.forEach(playlist => {
+            html += `
+                <div class="playlist-history-item">
+                    <div class="playlist-info">
+                        <h4>${playlist.name}</h4>
+                        <div class="playlist-meta">
+                            <span><i class="fas fa-play"></i> Used ${playlist.timesUsed} time${playlist.timesUsed !== 1 ? 's' : ''}</span>
+                            <span><i class="fas fa-clock"></i> Last used: ${new Date(playlist.lastUsed).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    <button class="load-playlist-btn" onclick="tabletopTunes.loadGamePlaylist('${gameName}', '${playlist.name}')">
+                        <i class="fas fa-download"></i> Load Playlist
+                    </button>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+        
+        // Add modal to page
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.innerHTML = html;
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+        document.body.appendChild(modal);
+    }
+    
+    loadGamePlaylist(gameName, playlistName) {
+        const gameHistory = this.gamePlaylistHistory[gameName];
+        const playlist = gameHistory?.playlists[playlistName];
+        
+        if (!playlist) {
+            this.showNotification(`Playlist "${playlistName}" not found`);
+            return;
+        }
+        
+        // Load the playlist data
+        if (playlist.data) {
+            this.currentCategory = playlist.data.category;
+            this.currentPlaylist = playlist.data.tracks || [];
+            this.currentTrackIndex = 0;
+            this.currentBoardGame = gameName;
+            
+            // Update UI
+            this.switchTab('main');
+            document.querySelectorAll('.category-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            if (playlist.data.category) {
+                const categoryCard = document.querySelector(`[data-category="${playlist.data.category}"]`);
+                if (categoryCard) categoryCard.classList.add('active');
+            }
+            
+            this.displayPlaylist();
+            this.updateCurrentTrackInfo();
+            
+            this.showNotification(`Loaded "${playlistName}" for ${gameName}`);
+            
+            // Track this usage
+            this.trackGamePlaylist(gameName, playlistName, playlist.data);
+        }
+        
+        // Close modal if it exists
+        const modal = document.querySelector('.modal-backdrop');
+        if (modal) modal.remove();
+    }
+    
+    updateGamesClosetStats() {
+        const totalGamesElement = document.getElementById('total-games');
+        const totalSessionsElement = document.getElementById('total-sessions');
+        const totalPlaylistsElement = document.getElementById('total-playlists');
+        
+        if (!totalGamesElement) return;
+        
+        const totalGames = Object.keys(this.savedGames).length;
+        const totalSessions = Object.values(this.savedGames).reduce((sum, game) => sum + (game.playCount || 0), 0);
+        
+        // Count unique playlists across all games
+        const allPlaylists = new Set();
+        Object.values(this.gamePlaylistHistory).forEach(gameHistory => {
+            Object.keys(gameHistory.playlists || {}).forEach(playlistName => {
+                allPlaylists.add(playlistName);
+            });
+        });
+        
+        totalGamesElement.textContent = totalGames;
+        totalSessionsElement.textContent = totalSessions;
+        totalPlaylistsElement.textContent = allPlaylists.size;
     }
     
     updateDisplay() {
@@ -1272,7 +1582,8 @@ class TabletopTunes {
                 // Reset to category browsing
                 this.matchingMode = 'category';
                 this.currentBoardGame = null;
-                document.querySelector('.playlist-section h2').textContent = 'Current Playlist';
+                const playlistTitle = document.querySelector('.playlist-section h3');
+                if (playlistTitle) playlistTitle.textContent = 'Current Playlist';
             } else if (result.category) {
                 // Handle theme-based results
                 this.currentBoardGame = gameInput;
@@ -1293,6 +1604,10 @@ class TabletopTunes {
                 this.currentBoardGame = gameName;
                 this.matchingMode = 'boardgame';
                 this.displayGameSuggestions(game);
+                
+                // Automatically save to games closet
+                this.saveToGamesCloset(gameName, { source: 'local_database' });
+                
                 return game;
             }
         }
@@ -1303,6 +1618,10 @@ class TabletopTunes {
             this.currentBoardGame = gameName;
             this.matchingMode = 'boardgame';
             this.displayGameSuggestions(localGame);
+            
+            // Automatically save to games closet
+            this.saveToGamesCloset(gameName, { source: 'local_database' });
+            
             return localGame;
         }
         
@@ -1314,6 +1633,20 @@ class TabletopTunes {
                 this.currentBoardGame = gameName;
                 this.matchingMode = 'boardgame';
                 this.displayBGGGameSuggestions(bggGame);
+                
+                // Automatically save to games closet with BGG data
+                this.saveToGamesCloset(gameName, { 
+                    source: 'boardgamegeek',
+                    bggData: {
+                        yearPublished: bggGame.yearPublished,
+                        minPlayers: bggGame.minPlayers,
+                        maxPlayers: bggGame.maxPlayers,
+                        playingTime: bggGame.playingTime,
+                        rating: bggGame.rating,
+                        description: bggGame.description
+                    }
+                });
+                
                 return bggGame;
             }
         } catch (error) {
@@ -1321,7 +1654,16 @@ class TabletopTunes {
         }
         
         // Final fallback to theme-based matching
-        return this.suggestByTheme(gameName);
+        const themeResult = this.suggestByTheme(gameName);
+        if (themeResult) {
+            // Even theme-based matches get saved to closet
+            this.saveToGamesCloset(gameName, { 
+                source: 'theme_analysis',
+                detectedCategory: themeResult.category 
+            });
+        }
+        
+        return themeResult;
     }
 
     suggestByTheme(input) {
@@ -1548,9 +1890,9 @@ class TabletopTunes {
 
     displayGameSuggestions(game) {
         const trackList = document.getElementById('track-list');
-        const categoryTitle = document.querySelector('.playlist-section h2');
+        const categoryTitle = document.querySelector('.playlist-section h3');
         
-        categoryTitle.textContent = `Recommendations for ${this.currentBoardGame}`;
+        if (categoryTitle) categoryTitle.textContent = `Recommendations for ${this.currentBoardGame}`;
         
         let html = `<div class="game-suggestions">`;
         
@@ -1656,9 +1998,9 @@ class TabletopTunes {
 
     displayBGGGameSuggestions(bggGame) {
         const trackList = document.getElementById('track-list');
-        const categoryTitle = document.querySelector('.playlist-section h2');
+        const categoryTitle = document.querySelector('.playlist-section h3');
         
-        categoryTitle.textContent = `Recommendations for ${bggGame.name}`;
+        if (categoryTitle) categoryTitle.textContent = `Recommendations for ${bggGame.name}`;
         
         let html = `<div class="game-suggestions bgg-suggestions">`;
         
@@ -1732,9 +2074,9 @@ class TabletopTunes {
 
     displayThemeBasedSuggestions(result, gameName) {
         const trackList = document.getElementById('track-list');
-        const categoryTitle = document.querySelector('.playlist-section h2');
+        const categoryTitle = document.querySelector('.playlist-section h3');
         
-        categoryTitle.textContent = `Theme-Based Suggestions for ${gameName}`;
+        if (categoryTitle) categoryTitle.textContent = `Theme-Based Suggestions for ${gameName}`;
         
         let html = `<div class="game-suggestions theme-suggestions">`;
         
@@ -2002,7 +2344,8 @@ class TabletopTunes {
         this.currentCategory = 'custom-mix';
         this.displayPlaylist();
         this.updateCurrentTrackInfo();
-        document.querySelector('.playlist-section h2').textContent = 'Custom Mixed Playlist';
+        const playlistTitle = document.querySelector('.playlist-section h3');
+        if (playlistTitle) playlistTitle.textContent = 'Custom Mixed Playlist';
         
         this.updatePlaybackStatus('Custom mixed playlist ready - perfect variety for any game!');
     }

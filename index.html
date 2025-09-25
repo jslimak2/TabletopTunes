@@ -37,6 +37,9 @@
                 <button class="nav-btn active" data-tab="main">
                     <i class="fas fa-home"></i> Home
                 </button>
+                <button class="nav-btn" data-tab="games-closet">
+                    <i class="fas fa-archive"></i> Games Closet
+                </button>
                 <button class="nav-btn" data-tab="spotify">
                     <i class="fab fa-spotify"></i> Spotify
                 </button>
@@ -52,140 +55,181 @@
         <main>
             <!-- Main Tab Content -->
             <div class="tab-content active" id="main-tab">
-                <!-- Board Game Search Section -->
-                <div class="game-search-section">
-                <h2><i class="fas fa-dice-d20"></i> Find Soundtracks for Your Board Game</h2>
-                <div class="search-container">
-                    <input type="text" id="game-search" placeholder="Enter your board game name (e.g., Gloomhaven, Catan, Pandemic...)">
-                    <button id="search-game-btn" class="search-btn"><i class="fas fa-search"></i> Find Soundtracks</button>
-                    <button id="quick-random-btn" class="quick-btn" title="Get random soundtrack suggestion"><i class="fas fa-dice"></i> Surprise Me!</button>
-                </div>
-                <div class="popular-games">
-                    <h3>Popular Games:</h3>
-                    <div class="game-chips">
-                        <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Gloomhaven')">Gloomhaven</span>
-                        <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Settlers of Catan')">Catan</span>
-                        <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Pandemic')">Pandemic</span>
-                        <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Betrayal at House on the Hill')">Betrayal</span>
-                        <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Scythe')">Scythe</span>
-                        <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Ticket to Ride')">Ticket to Ride</span>
+                <!-- Streamlined Header Section -->
+                <div class="main-header">
+                    <div class="hero-section">
+                        <h2><i class="fas fa-dice-d20"></i> Find Your Perfect Game Soundtrack</h2>
+                        <p class="hero-subtitle">Search for your board game or choose a mood to get started</p>
+                    </div>
+                    
+                    <!-- Combined Search and Quick Actions -->
+                    <div class="action-row">
+                        <div class="search-container">
+                            <input type="text" id="game-search" placeholder="Search any board game...">
+                            <button id="search-game-btn" class="search-btn"><i class="fas fa-search"></i></button>
+                        </div>
+                        <div class="quick-actions-compact">
+                            <button class="quick-btn" onclick="tabletopTunes.quickStart('ambient')" title="Start Ambient">
+                                <i class="fas fa-leaf"></i>
+                            </button>
+                            <button class="quick-btn" onclick="tabletopTunes.quickStart('fantasy')" title="Epic Fantasy">
+                                <i class="fas fa-dragon"></i>
+                            </button>
+                            <button class="quick-btn" onclick="tabletopTunes.quickStart('horror')" title="Horror Night">
+                                <i class="fas fa-ghost"></i>
+                            </button>
+                            <button id="quick-random-btn" class="quick-btn surprise-btn" title="Surprise Me!">
+                                <i class="fas fa-dice"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Popular Games (more compact) -->
+                    <div class="popular-games-compact">
+                        <span class="popular-label">Popular:</span>
+                        <div class="game-chips-compact">
+                            <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Gloomhaven')">Gloomhaven</span>
+                            <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Settlers of Catan')">Catan</span>
+                            <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Pandemic')">Pandemic</span>
+                            <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Scythe')">Scythe</span>
+                            <span class="game-chip more-games" onclick="tabletopTunes.switchTab('games-closet')">+ More in Games Closet</span>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Quick Start Actions -->
-                <div class="quick-actions">
-                    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
-                    <div class="action-buttons">
-                        <button class="action-btn" onclick="tabletopTunes.quickStart('ambient')">
+
+                <!-- Player Section (more prominent) -->
+                <div class="player-section enhanced">
+                    <div class="now-playing-card">
+                        <div class="track-info">
+                            <h3 id="current-track">No track selected</h3>
+                            <p id="current-category">Select a soundtrack category</p>
+                            <div class="track-meta">
+                                <span id="track-movie" class="movie-tag"></span>
+                                <span id="track-description" class="description-tag"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="player-controls-row">
+                            <div class="playback-controls">
+                                <button id="prev-btn" class="control-btn" title="Previous track"><i class="fas fa-step-backward"></i></button>
+                                <button id="play-pause-btn" class="control-btn primary" title="Play/Pause"><i class="fas fa-play"></i></button>
+                                <button id="next-btn" class="control-btn" title="Next track"><i class="fas fa-step-forward"></i></button>
+                            </div>
+                            
+                            <div class="secondary-controls">
+                                <button id="shuffle-btn" class="control-btn secondary" title="Shuffle playlist"><i class="fas fa-random"></i></button>
+                                <button id="loop-btn" class="control-btn secondary" title="Loop playlist"><i class="fas fa-redo"></i></button>
+                                <div class="volume-control inline">
+                                    <i class="fas fa-volume-up"></i>
+                                    <input type="range" id="volume-slider" min="0" max="100" value="99" title="Volume: 99%">
+                                    <span id="volume-display">99%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress" id="progress"></div>
+                            </div>
+                            <div class="time-display">
+                                <span id="current-time">0:00</span>
+                                <span id="duration">0:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simplified Categories Grid -->
+                <div class="categories-section compact">
+                    <h3>Browse by Mood</h3>
+                    <div class="categories-grid-compact">
+                        <div class="category-card compact" data-category="ambient">
                             <i class="fas fa-leaf"></i>
-                            <span>Start Ambient</span>
-                        </button>
-                        <button class="action-btn" onclick="tabletopTunes.quickStart('fantasy')">
+                            <span>Ambient</span>
+                        </div>
+                        <div class="category-card compact" data-category="fantasy">
                             <i class="fas fa-dragon"></i>
-                            <span>Epic Fantasy</span>
-                        </button>
-                        <button class="action-btn" onclick="tabletopTunes.quickStart('horror')">
+                            <span>Fantasy</span>
+                        </div>
+                        <div class="category-card compact" data-category="scifi">
+                            <i class="fas fa-rocket"></i>
+                            <span>Sci-Fi</span>
+                        </div>
+                        <div class="category-card compact" data-category="horror">
                             <i class="fas fa-ghost"></i>
-                            <span>Horror Night</span>
+                            <span>Horror</span>
+                        </div>
+                        <div class="category-card compact" data-category="adventure">
+                            <i class="fas fa-compass"></i>
+                            <span>Adventure</span>
+                        </div>
+                        <div class="category-card compact" data-category="tavern">
+                            <i class="fas fa-beer"></i>
+                            <span>Tavern</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Streamlined Playlist Section -->
+                <div class="playlist-section compact">
+                    <div class="playlist-header">
+                        <h3>Current Playlist</h3>
+                        <div class="playlist-actions">
+                            <input type="text" id="playlist-name" placeholder="Playlist name">
+                            <button id="save-playlist" class="action-btn primary">Save</button>
+                            <button id="load-playlist" class="action-btn secondary">Load</button>
+                            <button id="clear-playlist-btn" class="action-btn danger" title="Clear current playlist"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="track-list" id="track-list">
+                        <p class="empty-playlist">Search for a game above or select a mood to get started</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Games Closet Tab Content -->
+            <div class="tab-content" id="games-closet-tab">
+                <div class="games-closet-section">
+                    <h2><i class="fas fa-archive"></i> Your Games Closet</h2>
+                    <p class="section-intro">Keep track of your favorite board games and the playlists you've used with them. Games are automatically added here when you save playlists.</p>
+                    
+                    <div class="closet-stats">
+                        <div class="stat-card">
+                            <i class="fas fa-dice-d20"></i>
+                            <div class="stat-info">
+                                <span class="stat-number" id="total-games">0</span>
+                                <span class="stat-label">Saved Games</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-play"></i>
+                            <div class="stat-info">
+                                <span class="stat-number" id="total-sessions">0</span>
+                                <span class="stat-label">Play Sessions</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-list"></i>
+                            <div class="stat-info">
+                                <span class="stat-number" id="total-playlists">0</span>
+                                <span class="stat-label">Unique Playlists</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="closet-actions">
+                        <button class="action-btn primary" onclick="tabletopTunes.switchTab('main')">
+                            <i class="fas fa-plus"></i> Add New Game
                         </button>
-                        <button class="action-btn" onclick="tabletopTunes.createCustomPlaylist()">
-                            <i class="fas fa-plus-circle"></i>
-                            <span>Custom Mix</span>
+                        <button class="action-btn secondary" onclick="tabletopTunes.displayGamesCloset()">
+                            <i class="fas fa-sync"></i> Refresh
                         </button>
                     </div>
-                </div>
-            </div>
-
-            <div class="player-section">
-                <div class="now-playing">
-                    <div class="track-info">
-                        <h3 id="current-track">No track selected</h3>
-                        <p id="current-category">Select a soundtrack category</p>
-                        <div class="track-meta">
-                            <span id="track-movie" class="movie-tag"></span>
-                            <span id="track-description" class="description-tag"></span>
-                        </div>
-                    </div>
-                    <div class="progress-container">
-                        <div class="progress-bar">
-                            <div class="progress" id="progress"></div>
-                        </div>
-                        <div class="time-display">
-                            <span id="current-time">0:00</span>
-                            <span id="duration">0:00</span>
-                        </div>
+                    
+                    <div id="games-closet-content" class="games-closet-content">
+                        <!-- Games will be loaded here dynamically -->
                     </div>
                 </div>
-
-                <div class="controls">
-                    <button id="prev-btn" class="control-btn" title="Previous track"><i class="fas fa-step-backward"></i></button>
-                    <button id="play-pause-btn" class="control-btn primary" title="Play/Pause"><i class="fas fa-play"></i></button>
-                    <button id="next-btn" class="control-btn" title="Next track"><i class="fas fa-step-forward"></i></button>
-                    <button id="shuffle-btn" class="control-btn" title="Shuffle playlist"><i class="fas fa-random"></i></button>
-                    <button id="loop-btn" class="control-btn" title="Loop playlist"><i class="fas fa-redo"></i></button>
-                    <button id="clear-playlist-btn" class="control-btn danger" title="Clear current playlist"><i class="fas fa-trash"></i></button>
-                </div>
-
-                <div class="volume-control">
-                    <i class="fas fa-volume-up"></i>
-                    <input type="range" id="volume-slider" min="0" max="100" value="99" title="Volume: 99%">
-                    <span id="volume-display">99%</span>
-                </div>
-                
-                <!-- Playback Status -->
-                <div class="playback-status" id="playback-status">
-                    <i class="fas fa-info-circle"></i>
-                    <span>Ready to play your perfect soundtrack</span>
-                </div>
-            </div>
-
-            <div class="categories-section">
-                <h2>Or Browse Soundtrack Categories</h2>
-                <div class="categories-grid">
-                    <div class="category-card" data-category="ambient">
-                        <i class="fas fa-leaf"></i>
-                        <h3>Ambient</h3>
-                        <p>Peaceful background sounds</p>
-                    </div>
-                    <div class="category-card" data-category="fantasy">
-                        <i class="fas fa-dragon"></i>
-                        <h3>Fantasy</h3>
-                        <p>Medieval and magical themes</p>
-                    </div>
-                    <div class="category-card" data-category="scifi">
-                        <i class="fas fa-rocket"></i>
-                        <h3>Sci-Fi</h3>
-                        <p>Futuristic and space themes</p>
-                    </div>
-                    <div class="category-card" data-category="horror">
-                        <i class="fas fa-ghost"></i>
-                        <h3>Horror</h3>
-                        <p>Spooky and suspenseful</p>
-                    </div>
-                    <div class="category-card" data-category="adventure">
-                        <i class="fas fa-compass"></i>
-                        <h3>Adventure</h3>
-                        <p>Epic quests and exploration</p>
-                    </div>
-                    <div class="category-card" data-category="tavern">
-                        <i class="fas fa-beer"></i>
-                        <h3>Tavern</h3>
-                        <p>Social and festive atmosphere</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="playlist-section">
-                <h2>Current Playlist</h2>
-                <div class="playlist-controls">
-                    <input type="text" id="playlist-name" placeholder="Enter playlist name">
-                    <button id="save-playlist">Save Playlist</button>
-                    <button id="load-playlist">Load Playlist</button>
-                </div>
-                <div class="track-list" id="track-list">
-                    <p class="empty-playlist">Enter a board game name above or select a soundtrack category</p>
-                </div>
-            </div>
             </div>
 
             <!-- Spotify Tab Content -->
