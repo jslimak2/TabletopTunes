@@ -2906,11 +2906,91 @@ class TabletopTunes {
         this.showNotification(`Found "${bggGame.name}" on BoardGameGeek!`, 'success');
     }
 
+    /**
+     * Generate movie-style recommendations from theme analysis
+     * @param {Object} result - Theme analysis result
+     * @param {string} gameName - Original game name  
+     * @returns {Object} Enhanced result with suggestedSoundtracks format
+     */
+    generateMovieStyleSuggestions(result, gameName) {
+        // Map categories to movie recommendations
+        const categoryToMovies = {
+            fantasy: [
+                { movie: 'The Lord of the Rings: The Fellowship of the Ring', reason: 'Epic fantasy adventure with mystical themes', tracks: ['Concerning Hobbits', 'The Bridge of Khazad Dum', 'May It Be'] },
+                { movie: 'Harry Potter and the Philosopher\'s Stone', reason: 'Magical world-building and wonder', tracks: ['Hedwig\'s Theme', 'Diagon Alley', 'The Quidditch Match'] },
+                { movie: 'The Chronicles of Narnia', reason: 'Fantasy adventure and heroic themes', tracks: ['The Blitz', 'Evacuating London', 'Lucy Meets Mr. Tumnus'] }
+            ],
+            horror: [
+                { movie: 'The Shining', reason: 'Psychological tension and suspense', tracks: ['Main Title', 'Rocky Mountains', 'The Overlook Hotel'] },
+                { movie: 'Halloween', reason: 'Classic horror atmosphere', tracks: ['Halloween Theme', 'Laurie\'s Theme', 'The Shape Stalks'] },
+                { movie: 'A Quiet Place', reason: 'Tension and survival horror', tracks: ['A Quiet Place', 'The Creatures', 'Escape'] }
+            ],
+            scifi: [
+                { movie: 'Blade Runner 2049', reason: 'Futuristic and atmospheric sci-fi', tracks: ['2049', 'Mesa', 'Flight to LAPD'] },
+                { movie: 'Interstellar', reason: 'Space exploration and wonder', tracks: ['Cornfield Chase', 'No Time for Caution', 'Stay'] },
+                { movie: 'Tron Legacy', reason: 'Digital world and technology themes', tracks: ['The Grid', 'Derezzed', 'Adagio for TRON'] }
+            ],
+            adventure: [
+                { movie: 'Indiana Jones: Raiders of the Lost Ark', reason: 'Classic adventure and exploration', tracks: ['Raiders March', 'The Map Room', 'Truck Chase'] },
+                { movie: 'Pirates of the Caribbean', reason: 'Swashbuckling adventure', tracks: ['He\'s a Pirate', 'The Black Pearl', 'Bootstrap\'s Bootstraps'] },
+                { movie: 'The Mummy', reason: 'Adventure with mystery elements', tracks: ['The Mummy', 'Giza Port', 'Night Boarders'] }
+            ],
+            ambient: [
+                { movie: 'Arrival', reason: 'Contemplative and atmospheric', tracks: ['Heptapod B', 'The Nature of Daylight', 'Sapir-Whorf'] },
+                { movie: 'Her', reason: 'Emotional and introspective', tracks: ['Her', 'The Moon Song', 'Samantha'] },
+                { movie: 'Blade Runner', reason: 'Atmospheric and contemplative sci-fi', tracks: ['Main Titles', 'Blush Response', 'Tears in Rain'] }
+            ],
+            tavern: [
+                { movie: 'The Lord of the Rings: The Fellowship of the Ring', reason: 'Fellowship and gathering themes', tracks: ['Concerning Hobbits', 'A Shortcut to Mushrooms', 'The Old Forest'] },
+                { movie: 'Robin Hood: Prince of Thieves', reason: 'Medieval tavern and celebration', tracks: ['Overture', 'Sir Guy of Gisbourne', 'Little John'] },
+                { movie: 'Pirates of the Caribbean', reason: 'Tavern songs and maritime adventure', tracks: ['Pirates of the Caribbean', 'The Medallion Calls', 'The Black Pearl'] }
+            ]
+        };
+
+        // Get category with fallback to ambient
+        const category = result.category || 'ambient';
+        const movieSuggestions = categoryToMovies[category] || categoryToMovies.ambient;
+        
+        // Create enhanced result with movie-style format
+        const enhancedResult = {
+            ...result,
+            suggestedSoundtracks: movieSuggestions.map(suggestion => ({
+                ...suggestion,
+                enhanced: {
+                    composer: 'Various Artists',
+                    mood: this.getCategoryMood(categoryToMovies[category] ? category : 'ambient'),
+                    gameplayFit: `Perfect for ${categoryToMovies[category] ? category : 'ambient'} themed board games`
+                },
+                apiSource: false, // Mark as generated, not from API
+                themeGenerated: true // Mark as theme-based generation
+            }))
+        };
+
+        return enhancedResult;
+    }
+
+    /**
+     * Get mood description for category
+     * @param {string} category - Soundtrack category
+     * @returns {string} Mood description
+     */
+    getCategoryMood(category) {
+        const moods = {
+            fantasy: 'Epic and mystical',
+            horror: 'Dark and suspenseful', 
+            scifi: 'Futuristic and atmospheric',
+            adventure: 'Exciting and heroic',
+            ambient: 'Peaceful and contemplative',
+            tavern: 'Jovial and social'
+        };
+        return moods[category] || 'Atmospheric';
+    }
+
     displayThemeBasedSuggestions(result, gameName) {
         const trackList = document.getElementById('track-list');
         const categoryTitle = document.querySelector('.playlist-section h3');
         
-        if (categoryTitle) categoryTitle.textContent = `Movie Soundtrack Recommendations for ${gameName}`;
+        if (categoryTitle) categoryTitle.textContent = `Recommendations for ${gameName}`;
         
         // Add null safety checks
         if (!result) {
@@ -2918,86 +2998,81 @@ class TabletopTunes {
             return;
         }
         
-        // Ensure required properties exist with fallbacks
-        // Map game categories to soundtrack categories
-        const categoryMapping = {
-            'cooperative': 'adventure',    // Cooperative games → Adventure soundtracks
-            'strategy': 'ambient',         // Strategy games → Ambient soundtracks
-            'adventure': 'adventure',      // Adventure games → Adventure soundtracks
-            'thematic': 'fantasy'          // Thematic games → Fantasy soundtracks
-        };
+        // Generate movie-style suggestions from theme analysis
+        const enhancedResult = this.generateMovieStyleSuggestions(result, gameName);
         
-        const mappedCategory = categoryMapping[result.category] || result.category || 'ambient';
-        const categoryTracks = this.soundtracks[mappedCategory] || this.soundtracks['ambient'] || [];
+        let html = `<div class="game-suggestions">`;
         
-        const safeResult = {
-            reason: result.reason || `We've analyzed "${gameName}" and found the perfect soundtrack category!`,
-            confidence: result.confidence || 50,
-            detectedKeywords: result.detectedKeywords || [],
-            category: mappedCategory,
-            tracks: result.tracks || categoryTracks
-        };
-        
-        let html = `<div class="game-suggestions theme-suggestions">`;
-        
-        // Add theme analysis info
+        // Add theme analysis info at the top (similar to what we had before but more compact)
         html += `
-            <div class="theme-analysis-info">
-                <div class="analysis-header">
-                    <h3><i class="fas fa-search"></i> ${gameName}</h3>
-                    <div class="analysis-badge">
+            <div class="theme-analysis-header">
+                <div class="analysis-info">
+                    <span class="analysis-badge">
                         <i class="fas fa-lightbulb"></i> Theme Analysis
-                    </div>
+                    </span>
+                    <span class="confidence-score">
+                        ${enhancedResult.confidence || 50}% Match
+                    </span>
                 </div>
-                
-                <div class="analysis-details">
-                    <p class="analysis-reason">${safeResult.reason}</p>
-                    <div class="confidence-meter">
-                        <span class="confidence-label">Confidence: ${safeResult.confidence}%</span>
-                        <div class="confidence-bar">
-                            <div class="confidence-fill" style="width: ${safeResult.confidence}%"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                ${safeResult.detectedKeywords.length > 0 ? `
+                ${enhancedResult.detectedKeywords && enhancedResult.detectedKeywords.length > 0 ? `
                     <div class="detected-keywords">
                         <strong>Detected Keywords:</strong> 
-                        ${safeResult.detectedKeywords.slice(0, 5).map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                        ${enhancedResult.detectedKeywords.slice(0, 3).map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
                     </div>
                 ` : ''}
             </div>
         `;
         
-        // Add category-based soundtrack suggestions
-        html += `
-            <div class="category-suggestion theme-category-suggestion" onclick="tabletopTunes.selectCategory('${safeResult.category}')">
-                <div class="category-header">
-                    <h4><i class="fas fa-${this.getCategoryIcon(safeResult.category)}"></i> ${safeResult.category.charAt(0).toUpperCase() + safeResult.category.slice(1)} Soundtracks</h4>
-                    <div class="suggested-badge">
-                        <i class="fas fa-magic"></i> Recommended
-                    </div>
-                </div>
-                <p class="category-description">Perfect movie soundtracks for ${gameName} - click to start playing!</p>
-                <div class="sample-tracks">
-                    ${safeResult.tracks.length > 0 ? 
-                        safeResult.tracks.slice(0, 3).map(track => `
-                            <div class="sample-track">
-                                <span class="track-name">${track.name || 'Unknown Track'}</span>
-                                <span class="track-duration">${track.duration || '0:00'}</span>
+        // Display movie suggestions using the same format as displayGameSuggestions
+        if (enhancedResult.suggestedSoundtracks) {
+            enhancedResult.suggestedSoundtracks.forEach((suggestion, index) => {
+                const isThemeGenerated = suggestion.themeGenerated;
+                const enhancedClass = isThemeGenerated ? 'theme-generated' : '';
+                
+                html += `
+                    <div class="movie-suggestion enhanced-suggestion ${enhancedClass}" onclick="tabletopTunes.loadMovieSoundtrack('${suggestion.movie}', ${index})">
+                        <div class="movie-header">
+                            <h4><i class="fas fa-film"></i> ${suggestion.movie}</h4>
+                            <p class="suggestion-reason">${suggestion.reason}</p>
+                            ${isThemeGenerated ? `
+                                <div class="theme-generation-badge">
+                                    <i class="fas fa-magic"></i> Theme-Based Suggestion
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="suggested-tracks">
+                            ${(suggestion.tracks || []).map((track, trackIndex) => `
+                                <div class="suggested-track" onclick="event.stopPropagation(); tabletopTunes.playMovieTrack('${suggestion.movie}', '${track}', ${trackIndex})">
+                                    <span class="track-name">${track}</span>
+                                    <span class="track-source">from ${suggestion.movie}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${suggestion.enhanced ? `
+                            <div class="enhanced-details">
+                                <div class="enhanced-info">
+                                    <span class="info-label">Composer:</span>
+                                    <span class="info-value">${suggestion.enhanced.composer || 'Various Artists'}</span>
+                                </div>
+                                <div class="enhanced-info">
+                                    <span class="info-label">Mood:</span>
+                                    <span class="info-value">${suggestion.enhanced.mood || 'Atmospheric'}</span>
+                                </div>
+                                <div class="enhanced-info">
+                                    <span class="info-label">Gameplay Fit:</span>
+                                    <span class="info-value">${suggestion.enhanced.gameplayFit || 'Perfect for tabletop gaming'}</span>
+                                </div>
                             </div>
-                        `).join('') : 
-                        '<div class="no-tracks">No tracks available for this category</div>'
-                    }
-                    ${safeResult.tracks.length > 3 ? `<div class="more-tracks">+${safeResult.tracks.length - 3} more tracks - click to see all!</div>` : ''}
-                </div>
-            </div>
-        `;
+                        ` : ''}
+                    </div>
+                `;
+            });
+        }
         
         html += `</div>`;
         trackList.innerHTML = html;
         
-        this.showNotification(`Theme analysis complete for "${gameName}"!`, 'success');
+        this.showNotification(`Movie soundtrack suggestions generated for "${gameName}"!`, 'success');
     }
 
     getCategoryIcon(category) {
