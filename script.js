@@ -1751,6 +1751,9 @@ class TabletopTunes {
         if (gamesClosetTab && gamesClosetTab.classList.contains('active')) {
             this.displayGamesCloset();
         }
+        
+        // If we're switching away from My Games tab after adding, ensure refresh happens when we return
+        this.gamesClosetNeedsRefresh = true;
     }
 
     /**
@@ -2973,47 +2976,30 @@ class TabletopTunes {
             return existingGame;
         }
         
-        // Game not in My Games, search BGG
-        this.showNotification('Searching BoardGameGeek for new game...', 'info');
+        // Game not in My Games, search BGG for multiple results
+        this.showNotification('Searching BoardGameGeek for games...', 'info');
         try {
+            // First try to get multiple search results
+            const bggSearchResults = await this.bggService.searchGames(gameName);
+            
+            if (bggSearchResults && bggSearchResults.length > 0) {
+                if (bggSearchResults.length === 1) {
+                    // Single result - get details and display normally
+                    const bggGame = await this.bggService.getGameDetails(bggSearchResults[0].id);
+                    if (bggGame) {
+                        return this.handleSingleBGGResult(bggGame, gameName);
+                    }
+                } else {
+                    // Multiple results - show selection interface
+                    this.displayMultipleBGGResults(bggSearchResults, gameName);
+                    return { multipleResults: true, results: bggSearchResults };
+                }
+            }
+            
+            // Fallback to old single-game search
             const bggGame = await this.bggService.getGameByName(gameName);
             if (bggGame) {
-                // Use BGG's official name
-                const officialName = bggGame.name || gameName;
-                this.currentBoardGame = officialName;
-                this.matchingMode = 'boardgame';
-                
-                // Create game data object for selected game area
-                const gameData = {
-                    name: officialName,
-                    source: 'boardgamegeek',
-                    bggData: {
-                        yearPublished: bggGame.yearPublished,
-                        minPlayers: bggGame.minPlayers,
-                        maxPlayers: bggGame.maxPlayers,
-                        playingTime: bggGame.playingTime,
-                        complexity: bggGame.complexity,
-                        rating: bggGame.rating,
-                        description: bggGame.description,
-                        categories: bggGame.categories || [],
-                        mechanisms: bggGame.mechanisms || [],
-                        families: bggGame.families || [],
-                        themes: bggGame.themes || [],
-                        detectedCategory: bggGame.category,
-                        image: bggGame.image
-                    }
-                };
-                
-                // Show selected game area
-                this.showSelectedGameArea(gameData);
-                
-                this.displayBGGGameSuggestions(bggGame);
-                
-                // Store game data temporarily for later saving when music is played
-                this.pendingGameData = gameData;
-                
-                this.showNotification(`Found "${officialName}" on BGG! Play a soundtrack to add it to My Games.`, 'info');
-                return bggGame;
+                return this.handleSingleBGGResult(bggGame, gameName);
             }
         } catch (error) {
             console.warn('BGG API search failed:', error);
@@ -3038,6 +3024,164 @@ class TabletopTunes {
         }
         
         return themeResult;
+    }
+
+    /**
+     * Handle a single BGG search result
+     */
+    handleSingleBGGResult(bggGame, originalGameName) {
+        // Use BGG's official name
+        const officialName = bggGame.name || originalGameName;
+        this.currentBoardGame = officialName;
+        this.matchingMode = 'boardgame';
+        
+        // Create game data object for selected game area
+        const gameData = {
+            name: officialName,
+            source: 'boardgamegeek',
+            bggData: {
+                yearPublished: bggGame.yearPublished,
+                minPlayers: bggGame.minPlayers,
+                maxPlayers: bggGame.maxPlayers,
+                playingTime: bggGame.playingTime,
+                complexity: bggGame.complexity,
+                rating: bggGame.rating,
+                description: bggGame.description,
+                categories: bggGame.categories || [],
+                mechanisms: bggGame.mechanisms || [],
+                families: bggGame.families || [],
+                themes: bggGame.themes || [],
+                detectedCategory: bggGame.category,
+                image: bggGame.image
+            }
+        };
+        
+        // Show selected game area
+        this.showSelectedGameArea(gameData);
+        
+        this.displayBGGGameSuggestions(bggGame);
+        
+        // Store game data temporarily for later saving when music is played
+        this.pendingGameData = gameData;
+        
+        this.showNotification(`Found "${officialName}" on BGG! Play a soundtrack to add it to My Games.`, 'info');
+        return bggGame;
+    }
+
+    /**
+     * Display multiple BGG search results for user selection
+     */
+    displayMultipleBGGResults(results, originalQuery) {
+        const trackList = document.getElementById('track-list');
+        if (!trackList) return;
+
+        this.showNotification(`Found ${results.length} games matching "${originalQuery}" on BGG. Select one to continue.`, 'info');
+
+        let html = `
+            <div class="multiple-results-container">
+                <div class="multiple-results-header">
+                    <h4><i class="fas fa-search"></i> Multiple Games Found</h4>
+                    <p>Found ${results.length} games matching "${originalQuery}" on BoardGameGeek. Click on one to see soundtrack suggestions:</p>
+                </div>
+                <div class="bgg-results-grid">
+        `;
+
+        // Show up to 10 results to avoid overwhelming the user
+        const resultsToShow = results.slice(0, 10);
+        
+        resultsToShow.forEach((result, index) => {
+            const yearText = result.yearPublished ? ` (${result.yearPublished})` : '';
+            
+            html += `
+                <div class="bgg-result-card" onclick="tabletopTunes.selectBGGResult(${result.id}, '${this.escapeHtml(result.name)}', '${this.escapeHtml(originalQuery)}')">
+                    <div class="bgg-result-header">
+                        <h5 class="bgg-game-name">${this.escapeHtml(result.name)}</h5>
+                        <span class="bgg-year-badge">${yearText}</span>
+                    </div>
+                    <div class="bgg-result-meta">
+                        <span class="bgg-id">BGG ID: ${result.id}</span>
+                        <span class="result-index">#${index + 1}</span>
+                    </div>
+                    <div class="bgg-result-actions">
+                        <i class="fas fa-play-circle"></i>
+                        <span>Select & Get Soundtracks</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        if (results.length > 10) {
+            html += `
+                <div class="more-results-notice">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Showing first 10 of ${results.length} results. Try a more specific search for fewer results.</span>
+                </div>
+            `;
+        }
+
+        html += `
+                </div>
+                <div class="multiple-results-actions">
+                    <button class="action-btn secondary" onclick="tabletopTunes.cancelBGGSearch('${this.escapeHtml(originalQuery)}')">
+                        <i class="fas fa-times"></i> Cancel & Use Theme Analysis
+                    </button>
+                </div>
+            </div>
+        `;
+
+        trackList.innerHTML = html;
+    }
+
+    /**
+     * Handle selection of a specific BGG result
+     */
+    async selectBGGResult(bggId, gameName, originalQuery) {
+        this.showNotification(`Loading details for "${gameName}"...`, 'info');
+        
+        try {
+            const bggGame = await this.bggService.getGameDetails(bggId);
+            if (bggGame) {
+                this.handleSingleBGGResult(bggGame, gameName);
+            } else {
+                this.showNotification(`Could not load details for "${gameName}". Using theme analysis instead.`, 'warning');
+                this.fallbackToThemeAnalysis(originalQuery);
+            }
+        } catch (error) {
+            console.error('Error loading BGG game details:', error);
+            this.showNotification(`Error loading "${gameName}". Using theme analysis instead.`, 'error');
+            this.fallbackToThemeAnalysis(originalQuery);
+        }
+    }
+
+    /**
+     * Cancel BGG search and fall back to theme analysis
+     */
+    cancelBGGSearch(originalQuery) {
+        this.showNotification(`Using theme analysis for "${originalQuery}"...`, 'info');
+        this.fallbackToThemeAnalysis(originalQuery);
+    }
+
+    /**
+     * Fallback to theme-based analysis
+     */
+    fallbackToThemeAnalysis(gameName) {
+        const themeResult = this.suggestByTheme(gameName);
+        if (themeResult) {
+            // Create game data object for selected game area
+            const gameData = {
+                name: gameName,
+                source: 'theme_analysis',
+                detectedCategory: themeResult.category 
+            };
+            
+            // Show selected game area
+            this.showSelectedGameArea(gameData);
+            
+            // Store theme-based game data temporarily for later saving when music is played
+            this.pendingGameData = gameData;
+            
+            this.displayThemeBasedSuggestions(themeResult, gameName);
+        }
     }
 
     /**
@@ -4695,6 +4839,280 @@ class TabletopTunes {
             piece.style.filter = `saturate(${1 + pulseIntensity}) hue-rotate(${hueShift}deg)`;
             
             if (audioData.beat > 0) {
+                piece.style.boxShadow = `0 0 ${20 + audioData.volume * 30}px ${this.getGameThemeColor('accent')}`;
+            }
+        });
+    }
+
+    /**
+     * Enhanced game-specific visual feedback
+     */
+    updateGameSpecificVisualizations() {
+        if (!this.currentBoardGame) return;
+
+        const gameTheme = this.getCurrentGameTheme();
+        const selectedGameArea = document.getElementById('selected-game-area');
+        
+        if (selectedGameArea) {
+            // Add theme-specific animations to the selected game area
+            this.addGameThemeAnimations(selectedGameArea, gameTheme);
+        }
+
+        // Update background effects based on game theme
+        this.updateGameThemeBackground(gameTheme);
+        
+        // Add theme-specific particle effects
+        this.updateGameThemeParticles(gameTheme);
+    }
+
+    /**
+     * Add theme-specific animations to game areas
+     */
+    addGameThemeAnimations(element, theme) {
+        const time = Date.now() / 1000;
+        
+        switch (theme) {
+            case 'fantasy':
+                // Magical sparkle effect
+                this.addMagicalSparkles(element);
+                element.style.background = `linear-gradient(45deg, 
+                    rgba(136, 51, 255, 0.1) ${Math.sin(time) * 50 + 50}%, 
+                    rgba(255, 107, 53, 0.1) ${Math.cos(time * 1.2) * 50 + 50}%)`;
+                break;
+            case 'horror':
+                // Eerie shadow effects
+                element.style.boxShadow = `inset 0 0 ${20 + Math.sin(time * 2) * 10}px rgba(255, 0, 0, 0.3)`;
+                element.style.filter = `contrast(${1.1 + Math.sin(time) * 0.1})`;
+                break;
+            case 'scifi':
+                // Pulsing tech grid
+                element.style.background = `linear-gradient(90deg, 
+                    rgba(0, 191, 255, 0.1) 0%, 
+                    rgba(255, 20, 147, 0.1) ${Math.sin(time * 0.5) * 50 + 50}%, 
+                    rgba(50, 205, 50, 0.1) 100%)`;
+                break;
+            case 'adventure':
+                // Dynamic gradient movement
+                element.style.background = `linear-gradient(${time * 10}deg, 
+                    rgba(255, 107, 53, 0.1), 
+                    rgba(247, 147, 30, 0.1), 
+                    rgba(255, 215, 0, 0.1))`;
+                break;
+        }
+    }
+
+    /**
+     * Update background theme effects
+     */
+    updateGameThemeBackground(theme) {
+        const body = document.body;
+        const themeColors = this.gameThemeColors[theme] || this.gameThemeColors.ambient;
+        
+        // Subtle animated background gradient
+        const time = Date.now() / 3000;
+        body.style.background = `linear-gradient(${time * 5}deg, 
+            ${themeColors.primary}05, 
+            ${themeColors.secondary}05, 
+            ${themeColors.accent}05)`;
+    }
+
+    /**
+     * Add magical sparkle particles for fantasy games
+     */
+    addMagicalSparkles(container) {
+        if (container.querySelectorAll('.magic-sparkle').length > 5) return;
+        
+        const sparkle = document.createElement('div');
+        sparkle.className = 'magic-sparkle';
+        sparkle.style.cssText = `
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: radial-gradient(circle, #fff, transparent);
+            border-radius: 50%;
+            pointer-events: none;
+            left: ${Math.random() * 100}%;
+            top: ${Math.random() * 100}%;
+            animation: sparkle 2s ease-out forwards;
+        `;
+        
+        container.appendChild(sparkle);
+        
+        // Remove sparkle after animation
+        setTimeout(() => {
+            if (sparkle.parentNode) {
+                sparkle.parentNode.removeChild(sparkle);
+            }
+        }, 2000);
+    }
+
+    /**
+     * Add floating particles based on game theme
+     */
+    updateGameThemeParticles(theme) {
+        const particleContainer = document.getElementById('game-particles') || this.createParticleContainer();
+        
+        // Limit particle count
+        if (particleContainer.children.length > 10) return;
+        
+        const particle = this.createThemeParticle(theme);
+        particleContainer.appendChild(particle);
+        
+        // Remove particle after animation
+        setTimeout(() => {
+            if (particle.parentNode) {
+                particle.parentNode.removeChild(particle);
+            }
+        }, 5000);
+    }
+
+    /**
+     * Create particle container if it doesn't exist
+     */
+    createParticleContainer() {
+        const container = document.createElement('div');
+        container.id = 'game-particles';
+        container.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        `;
+        document.body.appendChild(container);
+        return container;
+    }
+
+    /**
+     * Create theme-specific particle
+     */
+    createThemeParticle(theme) {
+        const particle = document.createElement('div');
+        const size = Math.random() * 6 + 2;
+        const startX = Math.random() * window.innerWidth;
+        const startY = window.innerHeight + 20;
+        
+        let particleStyle = `
+            position: absolute;
+            width: ${size}px;
+            height: ${size}px;
+            left: ${startX}px;
+            top: ${startY}px;
+            pointer-events: none;
+        `;
+        
+        switch (theme) {
+            case 'fantasy':
+                particleStyle += `
+                    background: radial-gradient(circle, #8833ff, #ff6b35);
+                    border-radius: 50%;
+                    animation: float-up-sparkle 5s linear forwards;
+                `;
+                break;
+            case 'horror':
+                particleStyle += `
+                    background: #ff0000;
+                    border-radius: 0;
+                    transform: rotate(45deg);
+                    animation: float-up-scary 5s ease-out forwards;
+                `;
+                break;
+            case 'scifi':
+                particleStyle += `
+                    background: linear-gradient(45deg, #00bfff, #ff1493);
+                    border-radius: 2px;
+                    animation: float-up-tech 5s linear forwards;
+                `;
+                break;
+            default:
+                particleStyle += `
+                    background: rgba(78, 205, 196, 0.8);
+                    border-radius: 50%;
+                    animation: float-up 5s ease-out forwards;
+                `;
+        }
+        
+        particle.style.cssText = particleStyle;
+        return particle;
+    }
+
+    /**
+     * Get current game theme for visualizations
+     */
+    getCurrentGameTheme() {
+        if (this.currentCategory) return this.currentCategory;
+        if (this.pendingGameData && this.pendingGameData.detectedCategory) {
+            return this.pendingGameData.detectedCategory;
+        }
+        return 'ambient';
+    }
+
+    /**
+     * Get theme color for current game
+     */
+    getGameThemeColor(colorType = 'primary') {
+        const theme = this.getCurrentGameTheme();
+        const colors = this.gameThemeColors[theme] || this.gameThemeColors.ambient;
+        return colors[colorType] || colors.primary;
+    }
+
+    /**
+     * Enhanced game theme visualizations that update continuously
+     */
+    updateGameThemeVisualizations() {
+        if (!this.currentBoardGame && !this.currentCategory) return;
+        
+        this.updateGameSpecificVisualizations();
+        
+        // Update selected game area with enhanced effects
+        this.enhanceSelectedGameArea();
+        
+        // Update playlist area with theme colors
+        this.enhancePlaylistArea();
+    }
+
+    /**
+     * Enhance the selected game area with dynamic effects
+     */
+    enhanceSelectedGameArea() {
+        const selectedGameArea = document.getElementById('selected-game-area');
+        if (!selectedGameArea) return;
+        
+        const gameImage = selectedGameArea.querySelector('.game-cover');
+        const gameInfo = selectedGameArea.querySelector('.game-info');
+        
+        if (gameImage) {
+            const time = Date.now() / 1000;
+            const pulseIntensity = Math.sin(time * 0.5) * 0.1 + 1;
+            gameImage.style.transform = `scale(${pulseIntensity})`;
+            gameImage.style.filter = `brightness(${0.9 + Math.sin(time * 0.3) * 0.1})`;
+        }
+        
+        if (gameInfo) {
+            const themeColor = this.getGameThemeColor('primary');
+            gameInfo.style.borderLeft = `3px solid ${themeColor}`;
+        }
+    }
+
+    /**
+     * Enhance playlist area with theme-based styling
+     */
+    enhancePlaylistArea() {
+        const playlistContent = document.getElementById('track-list');
+        if (!playlistContent) return;
+        
+        const movieSuggestions = playlistContent.querySelectorAll('.movie-suggestion');
+        movieSuggestions.forEach((suggestion, index) => {
+            const delay = index * 0.1;
+            const time = (Date.now() / 1000) + delay;
+            const glow = Math.sin(time * 0.8) * 0.3 + 0.7;
+            
+            suggestion.style.boxShadow = `0 2px 10px rgba(${this.getGameThemeColor('primary').slice(1).match(/.{2}/g).map(hex => parseInt(hex, 16)).join(', ')}, ${glow * 0.3})`;
+        });
+    }
                 piece.style.borderColor = this.getGameThemeColor('accent');
                 piece.style.boxShadow = `0 0 15px ${this.getGameThemeColor('primary')}`;
             }
@@ -4704,10 +5122,11 @@ class TabletopTunes {
     /**
      * Update game theme visualizations based on selected game
      */
-    updateGameThemeVisualizations() {
-        if (!this.currentBoardGame || !this.pendingGameData) return;
-
-        const gameCategory = this.pendingGameData.detectedCategory || 'fantasy';
+    /**
+     * Update CSS theme properties based on current game
+     */
+    updateGameThemeProperties() {
+        const gameCategory = this.getCurrentGameTheme();
         const themeColors = this.gameThemeColors[gameCategory];
         
         if (!themeColors) return;
@@ -4719,8 +5138,6 @@ class TabletopTunes {
 
         // Update selected game area theme
         this.updateSelectedGameAreaTheme(themeColors);
-        
-        // Update visualization elements theme
         this.updateVisualizationTheme(gameCategory, themeColors);
     }
 
