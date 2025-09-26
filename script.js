@@ -179,11 +179,7 @@ class TabletopTunes {
             spotifySearchBtn.addEventListener('click', () => this.searchSpotify());
         }
         
-        // Initialize Spotify Web Playback SDK when available
-        window.onSpotifyWebPlaybackSDKReady = () => {
-            console.log('Spotify SDK Ready');
-            this.setupSpotifyPlayer();
-        };
+        // Spotify callback will be set globally after class definition
     }
     
     async connectSpotify() {
@@ -5113,11 +5109,6 @@ class TabletopTunes {
             suggestion.style.boxShadow = `0 2px 10px rgba(${this.getGameThemeColor('primary').slice(1).match(/.{2}/g).map(hex => parseInt(hex, 16)).join(', ')}, ${glow * 0.3})`;
         });
     }
-                piece.style.borderColor = this.getGameThemeColor('accent');
-                piece.style.boxShadow = `0 0 15px ${this.getGameThemeColor('primary')}`;
-            }
-        });
-    }
 
     /**
      * Update game theme visualizations based on selected game
@@ -5831,13 +5822,17 @@ class TabletopTunes {
 // Initialize the application when the page loads
 let tabletopTunes;
 
-document.addEventListener('DOMContentLoaded', () => {
-    tabletopTunes = new TabletopTunes();
-});
+// Initialize Spotify Web Playback SDK when available
+window.onSpotifyWebPlaybackSDKReady = () => {
+    console.log('Spotify SDK Ready');
+    if (window.tabletopTunes) {
+        tabletopTunes.setupSpotifyPlayer();
+    }
+};
 
 // Save preferences before page unload
 window.addEventListener('beforeunload', () => {
-    if (tabletopTunes) {
-        tabletopTunes.saveUserPreferences();
+    if (window.tabletopTunes) {
+        window.tabletopTunes.saveUserPreferences();
     }
 });
