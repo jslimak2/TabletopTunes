@@ -2118,10 +2118,23 @@ class TabletopTunes {
         const suggestions = [];
         const normalizedQuery = query.toLowerCase();
         
+        // First, check games closet for matches (prioritize user's saved games)
+        Object.keys(this.savedGames).forEach(gameName => {
+            if (gameName.toLowerCase().includes(normalizedQuery)) {
+                suggestions.push({
+                    name: gameName,
+                    source: 'closet',
+                    category: this.savedGames[gameName].detectedCategory || 'adventure',
+                    themes: this.savedGames[gameName].themes || []
+                });
+            }
+        });
+        
         // Check local database for matches
         if (typeof BOARD_GAMES_DATABASE !== 'undefined') {
             Object.keys(BOARD_GAMES_DATABASE).forEach(gameName => {
-                if (gameName.toLowerCase().includes(normalizedQuery)) {
+                // Avoid duplicates if game is already in closet
+                if (gameName.toLowerCase().includes(normalizedQuery) && !this.savedGames[gameName]) {
                     suggestions.push({
                         name: gameName,
                         source: 'database',
@@ -2178,9 +2191,15 @@ class TabletopTunes {
                 const escapedSource = this.escapeHtml(suggestion.source);
                 const escapedThemes = suggestion.themes ? this.escapeHtml(suggestion.themes.slice(0, 3).join(', ')) : '';
                 
+                const iconClass = suggestion.isCategory 
+                    ? 'fa-layer-group' 
+                    : suggestion.source === 'closet' 
+                        ? 'fa-archive' 
+                        : 'fa-dice';
+                
                 return `
                     <div class="live-search-item" onclick="tabletopTunes.selectLiveSearchResult('${escapedName}', '${escapedSource}')">
-                        <i class="fas ${suggestion.isCategory ? 'fa-layer-group' : 'fa-dice'}" style="margin-right: 8px; color: var(--primary-color);"></i>
+                        <i class="fas ${iconClass}" style="margin-right: 8px; color: var(--primary-color);"></i>
                         <div class="suggestion-content">
                             <span class="suggestion-name">${escapedName}</span>
                             ${escapedThemes ? `<span class="suggestion-themes">${escapedThemes}</span>` : ''}

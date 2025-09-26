@@ -2071,6 +2071,69 @@ input:focus,
     flex-shrink: 0;
 }
 
+/* Action Button Styles - Match Terminal Theme */
+.action-btn {
+    background: var(--bg-glass);
+    border: 1px solid var(--terminal-border);
+    border-radius: var(--radius-terminal);
+    padding: var(--space-md) var(--space-lg);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--primary-gradient);
+    transition: left var(--transition-normal);
+    z-index: -1;
+}
+
+.action-btn:hover::before {
+    left: 0;
+}
+
+.action-btn:hover {
+    color: var(--terminal-black);
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-neon);
+    transform: translateY(-2px);
+}
+
+.action-btn.primary {
+    border-color: var(--primary-color);
+    background: var(--primary-gradient);
+    color: var(--terminal-black);
+}
+
+.action-btn.primary::before {
+    background: var(--secondary-gradient);
+}
+
+.action-btn.secondary {
+    border-color: var(--secondary-color);
+}
+
+.action-btn.secondary::before {
+    background: var(--secondary-gradient);
+}
+
 /* Enhanced Dashboard */
 .closet-dashboard {
     display: grid;
