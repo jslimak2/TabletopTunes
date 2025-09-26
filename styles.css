@@ -2040,9 +2040,9 @@ input:focus,
         color: var(--primary-light);
     }
 
-/* ===== ENHANCED GAMES CLOSET STYLES ===== */
+/* ===== ENHANCED MY GAMES STYLES ===== */
 
-/* Closet Header */
+/* Collection Header */
 .closet-header {
     display: flex;
     justify-content: space-between;

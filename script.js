@@ -109,7 +109,7 @@ class TabletopTunes {
             selectedTab.classList.add('active');
             selectedBtn.classList.add('active');
             
-            // Special handling for Games Closet tab
+            // Special handling for My Games tab
             if (tabName === 'games-closet') {
                 this.displayGamesCloset();
                 this.updateGamesClosetStats();
@@ -1223,7 +1223,7 @@ class TabletopTunes {
         localStorage.setItem('tabletopTunes_loop', this.isLoop);
     }
     
-    // Games Closet functionality
+    // My Games functionality
     loadGamesCloset() {
         // Load saved games
         const savedGamesData = localStorage.getItem('tabletopTunes_savedGames');
@@ -1255,7 +1255,7 @@ class TabletopTunes {
         // Save to localStorage
         localStorage.setItem('tabletopTunes_savedGames', JSON.stringify(this.savedGames));
         
-        this.showNotification(`"${gameName}" added to Games Closet!`);
+        this.showNotification(`"${gameName}" added to My Games!`);
     }
     
     trackGamePlaylist(gameName, playlistName, playlistData) {
@@ -1304,7 +1304,7 @@ class TabletopTunes {
                 localStorage.setItem('tabletopTunes_gameHistory', JSON.stringify(this.gamePlaylistHistory));
             }
             
-            this.showNotification(`"${gameName}" removed from Games Closet`);
+            this.showNotification(`"${gameName}" removed from My Games`);
             this.displayGamesCloset(); // Refresh display
         }
     }
@@ -1326,7 +1326,7 @@ class TabletopTunes {
                         <i class="fas fa-dice-d20"></i>
                     </div>
                     <h3>Start Your Gaming Journey</h3>
-                    <p>Your games closet is waiting for its first adventure! When you search for board games and find soundtracks, they'll automatically be saved here.</p>
+                    <p>Your game collection is waiting for its first adventure! When you search for board games and find soundtracks, they'll automatically be saved here.</p>
                     <div class="empty-state-actions">
                         <button class="action-btn primary large" onclick="tabletopTunes.switchTab('main')">
                             <i class="fas fa-search"></i> Find Your First Game
@@ -1687,7 +1687,7 @@ class TabletopTunes {
             });
         });
         this.displayGamesCloset();
-        this.showNotification('Added sample games to your closet!', 'success');
+        this.showNotification('Added sample games to your collection!', 'success');
     }
     
     toggleGameMenu(gameName) {
@@ -1883,12 +1883,12 @@ class TabletopTunes {
     }
     
     clearAllGames() {
-        if (confirm('Are you sure you want to remove all games from your closet? This action cannot be undone.')) {
+        if (confirm('Are you sure you want to remove all games from your collection? This action cannot be undone.')) {
             this.savedGames = {};
             this.gamePlaylistHistory = {};
             this.saveUserData();
             this.displayGamesCloset();
-            this.showNotification('All games cleared from closet', 'success');
+            this.showNotification('All games cleared from collection', 'success');
         }
     }
     
@@ -2192,12 +2192,20 @@ class TabletopTunes {
                 const escapedSource = this.escapeHtml(suggestion.source);
                 const escapedThemes = suggestion.themes ? this.escapeHtml(suggestion.themes.slice(0, 3).join(', ')) : '';
                 
+                // Map internal source names to user-friendly display names
+                const sourceDisplayMap = {
+                    'closet': 'My Games',
+                    'database': 'Built-in',
+                    'theme': 'Theme Match'
+                };
+                const displaySource = sourceDisplayMap[suggestion.source] || suggestion.source;
+                
                 const iconClass = suggestion.isCategory 
                     ? 'fa-layer-group' 
                     : suggestion.source === 'closet' 
-                        ? 'fa-archive' 
+                        ? 'fa-user-circle' 
                         : 'fa-dice';
-                
+
                 return `
                     <div class="live-search-item" onclick="tabletopTunes.selectLiveSearchResult('${escapedName}', '${escapedSource}')">
                         <i class="fas ${iconClass}" style="margin-right: 8px; color: var(--primary-color);"></i>
@@ -2205,12 +2213,12 @@ class TabletopTunes {
                             <span class="suggestion-name">${escapedName}</span>
                             ${escapedThemes ? `<span class="suggestion-themes">${escapedThemes}</span>` : ''}
                         </div>
-                        <span class="suggestion-source">${escapedSource}</span>
+                        <span class="suggestion-source">${displaySource}</span>
                     </div>
                 `;
             }).join('');
         }
-        
+
         container.style.display = 'block';
     }
     
@@ -2702,7 +2710,11 @@ class TabletopTunes {
                                 <div class="api-enhancement-badge">
                                     <i class="fas fa-sparkles"></i> Enhanced with API data
                                 </div>
-                            ` : ''}
+                            ` : `
+                                <div class="built-in-badge">
+                                    <i class="fas fa-star"></i> Built-in Game
+                                </div>
+                            `}
                         </div>
                         <div class="suggested-tracks">
                             ${(suggestion.tracks || []).map((track, trackIndex) => `
