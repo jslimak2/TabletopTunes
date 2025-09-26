@@ -1280,6 +1280,66 @@ header p::after {
     }
 }
 
+@keyframes particle-burst {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0);
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(
+            calc(-50% + ${Math.cos(Math.random() * 2 * Math.PI) * 100}px), 
+            calc(-50% + ${Math.sin(Math.random() * 2 * Math.PI) * 100}px)
+        ) scale(0.5);
+    }
+}
+
+/* Enhanced playing state for selected game area */
+.selected-game-area.playing {
+    border-color: var(--theme-primary, var(--primary-color));
+    box-shadow: 
+        0 0 30px var(--theme-primary, var(--primary-color))33,
+        var(--shadow-terminal),
+        0 0 60px var(--theme-secondary, var(--secondary-color))22;
+    animation: gamePlayingPulse 3s ease-in-out infinite;
+}
+
+.selected-game-area.playing .current-song-display {
+    border-color: var(--theme-accent, var(--primary-color));
+    background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+}
+
+.selected-game-area.playing .play-indicator {
+    opacity: 1;
+    animation: pulse 2s infinite;
+}
+
+@keyframes gamePlayingPulse {
+    0%, 100% {
+        box-shadow: 
+            0 0 30px var(--theme-primary, var(--primary-color))33,
+            var(--shadow-terminal),
+            0 0 60px var(--theme-secondary, var(--secondary-color))22;
+    }
+    50% {
+        box-shadow: 
+            0 0 40px var(--theme-primary, var(--primary-color))55,
+            var(--shadow-terminal),
+            0 0 80px var(--theme-secondary, var(--secondary-color))33;
+    }
+}
+
+/* Dynamic theme color variables */
+:root {
+    --theme-primary: #4ecdc4;
+    --theme-secondary: #95e1d3;
+    --theme-accent: #fce38a;
+}
+
 /* Responsive Design for Selected Game Area */
 @media (max-width: 768px) {
     .selected-game-content {
@@ -1300,6 +1360,121 @@ header p::after {
     .song-image-container {
         width: 100px;
         height: 100px;
+    }
+}
+
+/* ===============================================
+   🎵 Music-Reactive Visualizations
+   =============================================== */
+
+/* Enhanced landscape canvas for music reactivity */
+.landscape-canvas.music-reactive {
+    animation: landscapeReactive 4s ease-in-out infinite;
+}
+
+@keyframes landscapeReactive {
+    0%, 100% {
+        box-shadow: inset 0 0 50px rgba(0, 255, 136, 0.1);
+    }
+    50% {
+        box-shadow: 
+            inset 0 0 70px var(--theme-primary, rgba(0, 255, 136, 0.2))33,
+            inset 0 0 100px var(--theme-secondary, rgba(0, 255, 136, 0.1))22;
+    }
+}
+
+/* Music-reactive dice */
+.dice.music-reactive {
+    transition: all 0.2s ease;
+    animation: diceReactive 2s ease-in-out infinite;
+}
+
+@keyframes diceReactive {
+    0%, 100% {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+        box-shadow: 
+            0 2px 20px var(--theme-primary, var(--primary-color))44,
+            0 0 30px var(--theme-accent, var(--secondary-color))33;
+    }
+}
+
+/* Music-reactive meeples */
+.meeple.music-reactive {
+    transition: all 0.3s ease;
+    animation: meepleReactive 1.5s ease-in-out infinite;
+}
+
+@keyframes meepleReactive {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+        filter: brightness(1);
+    }
+    25% {
+        transform: translateY(-5px) rotate(-2deg);
+        filter: brightness(1.2);
+    }
+    75% {
+        transform: translateY(-3px) rotate(2deg);
+        filter: brightness(1.1);
+    }
+}
+
+/* Music-reactive game pieces */
+.game-piece.music-reactive {
+    transition: all 0.2s ease;
+    animation: pieceReactive 2.5s ease-in-out infinite;
+}
+
+@keyframes pieceReactive {
+    0%, 100% {
+        transform: scale(1);
+        border-color: var(--terminal-border);
+        filter: saturate(1);
+    }
+    50% {
+        transform: scale(1.05);
+        border-color: var(--theme-accent, var(--primary-color));
+        filter: saturate(1.3);
+    }
+}
+
+/* Beat-responsive elements */
+.beat-responsive {
+    animation: beatPulse 0.6s ease-out;
+}
+
+@keyframes beatPulse {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+    30% {
+        transform: scale(1.1);
+        filter: brightness(1.3) hue-rotate(30deg);
+    }
+    100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+}
+
+/* Visualization tab enhanced states */
+.viz-tab-btn.active.music-playing {
+    border-color: var(--theme-primary, var(--primary-color));
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-tertiary));
+    animation: tabReactive 3s ease-in-out infinite;
+}
+
+@keyframes tabReactive {
+    0%, 100% {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    50% {
+        box-shadow: 
+            0 2px 20px var(--theme-primary, var(--primary-color))33,
+            0 0 15px var(--theme-accent, var(--secondary-color))22;
     }
 }
 
