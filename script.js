@@ -872,6 +872,19 @@ class TabletopTunes {
             }
         });
         
+        // Live search functionality with debouncing
+        document.getElementById('game-search').addEventListener('input', (e) => {
+            this.handleLiveSearch(e.target.value);
+        });
+        
+        // Hide live search results when clicking outside
+        document.addEventListener('click', (e) => {
+            const searchContainer = document.querySelector('.search-container');
+            if (!searchContainer.contains(e.target)) {
+                this.hideLiveSearchResults();
+            }
+        });
+        
         // Playlist controls
         document.getElementById('save-playlist').addEventListener('click', () => this.savePlaylist());
         document.getElementById('load-playlist').addEventListener('click', () => this.loadPlaylist());
@@ -2067,6 +2080,127 @@ class TabletopTunes {
                 }
             }, 300);
         }, duration);
+    }
+
+    // Live Search Functionality
+    handleLiveSearch(query) {
+        // Clear previous timeout
+        if (this.liveSearchTimeout) {
+            clearTimeout(this.liveSearchTimeout);
+        }
+        
+        // Hide suggestions if query is too short
+        if (query.length < 2) {
+            this.hideLiveSearchResults();
+            return;
+        }
+        
+        // Debounce the search to avoid excessive API calls
+        this.liveSearchTimeout = setTimeout(() => {
+            this.performLiveSearch(query);
+        }, 300);
+    }
+    
+    async performLiveSearch(query) {
+        try {
+            const suggestions = await this.getLiveSearchSuggestions(query);
+            this.displayLiveSearchResults(suggestions, query);
+        } catch (error) {
+            console.error('Live search error:', error);
+            this.hideLiveSearchResults();
+        }
+    }
+    
+    async getLiveSearchSuggestions(query) {
+        const suggestions = [];
+        const normalizedQuery = query.toLowerCase();
+        
+        // Check local database for matches
+        if (typeof BOARD_GAMES_DATABASE !== 'undefined') {
+            Object.keys(BOARD_GAMES_DATABASE).forEach(gameName => {
+                if (gameName.toLowerCase().includes(normalizedQuery)) {
+                    suggestions.push({
+                        name: gameName,
+                        source: 'database',
+                        category: BOARD_GAMES_DATABASE[gameName].category,
+                        themes: BOARD_GAMES_DATABASE[gameName].themes
+                    });
+                }
+            });
+        }
+        
+        // Add theme-based suggestions
+        const themes = ['fantasy', 'scifi', 'horror', 'adventure', 'mystery', 'western'];
+        themes.forEach(theme => {
+            if (theme.includes(normalizedQuery) || normalizedQuery.includes(theme)) {
+                suggestions.push({
+                    name: `${theme.charAt(0).toUpperCase() + theme.slice(1)} Games`,
+                    source: 'theme',
+                    category: theme,
+                    isCategory: true
+                });
+            }
+        });
+        
+        // Limit to top 5 suggestions
+        return suggestions.slice(0, 5);
+    }
+    
+    displayLiveSearchResults(suggestions, query) {
+        let container = document.getElementById('live-search-results');
+        
+        // Create container if it doesn't exist
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'live-search-results';
+            container.className = 'live-search-results';
+            
+            const searchContainer = document.querySelector('.search-container');
+            searchContainer.appendChild(container);
+        }
+        
+        if (suggestions.length === 0) {
+            container.innerHTML = `
+                <div class="live-search-item no-results">
+                    <i class="fas fa-search" style="margin-right: 8px; color: var(--text-secondary);"></i>
+                    <span>No matches found for "${query}"</span>
+                </div>
+            `;
+        } else {
+            container.innerHTML = suggestions.map(suggestion => `
+                <div class="live-search-item" onclick="tabletopTunes.selectLiveSearchResult('${suggestion.name}', '${suggestion.source}')">
+                    <i class="fas ${suggestion.isCategory ? 'fa-layer-group' : 'fa-dice'}" style="margin-right: 8px; color: var(--primary-color);"></i>
+                    <div class="suggestion-content">
+                        <span class="suggestion-name">${suggestion.name}</span>
+                        ${suggestion.themes ? `<span class="suggestion-themes">${suggestion.themes.slice(0, 3).join(', ')}</span>` : ''}
+                    </div>
+                    <span class="suggestion-source">${suggestion.source}</span>
+                </div>
+            `).join('');
+        }
+        
+        container.style.display = 'block';
+    }
+    
+    hideLiveSearchResults() {
+        const container = document.getElementById('live-search-results');
+        if (container) {
+            container.style.display = 'none';
+        }
+    }
+    
+    selectLiveSearchResult(gameName, source) {
+        const searchInput = document.getElementById('game-search');
+        searchInput.value = gameName;
+        this.hideLiveSearchResults();
+        
+        if (source === 'theme') {
+            // Extract theme from the name (e.g., "Fantasy Games" -> "fantasy")
+            const theme = gameName.toLowerCase().replace(' games', '');
+            this.selectCategory(theme);
+        } else {
+            this.performGameSearch();
+        }
     }
 
     // Board Game Matching Functions

@@ -568,6 +568,95 @@ header p::after {
     animation: var(--animation-pulse-neon);
 }
 
+/* 🔍 Live Search Results Dropdown */
+.live-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    backdrop-filter: blur(15px);
+    border: 2px solid var(--terminal-border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-terminal) var(--radius-terminal);
+    box-shadow: var(--shadow-terminal), 0 8px 32px rgba(0, 255, 136, 0.1);
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+}
+
+.live-search-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-md) var(--space-lg);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border-bottom: 1px solid var(--terminal-border);
+}
+
+.live-search-item:last-child {
+    border-bottom: none;
+}
+
+.live-search-item:hover {
+    background: var(--bg-glass-hover);
+    transform: translateX(4px);
+    border-left: 3px solid var(--primary-color);
+}
+
+.live-search-item.no-results {
+    cursor: default;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.live-search-item.no-results:hover {
+    background: transparent;
+    transform: none;
+    border-left: none;
+}
+
+.suggestion-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.suggestion-name {
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.suggestion-themes {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-family: 'Inter', sans-serif;
+}
+
+.suggestion-source {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* Hide dropdown when search input loses focus (with delay for clicking) */
+.search-container:not(:focus-within) .live-search-results {
+    animation: fadeOutDropdown 0.2s ease-out forwards;
+}
+
+@keyframes fadeOutDropdown {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-8px); display: none; }
+}
+
 /* 🎲 Enhanced Gaming Quick Actions */
 .quick-actions-compact {
     display: flex;
