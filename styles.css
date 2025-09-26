@@ -4830,3 +4830,184 @@ input:focus,
         display: none;
     }
 }
+
+/* ===============================================
+   🎮 Add to My Games Button Styles
+   =============================================== */
+
+.add-to-my-games-section {
+    background: var(--bg-glass);
+    border: 2px solid var(--primary-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-xl);
+    text-align: center;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.add-to-my-games-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--primary-gradient);
+    animation: var(--animation-pulse-neon);
+}
+
+.add-to-my-games-btn {
+    background: var(--primary-gradient);
+    border: 2px solid var(--primary-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md) var(--space-xl);
+    color: var(--terminal-black);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin: 0 auto var(--space-md);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: var(--shadow-neon);
+    position: relative;
+    overflow: hidden;
+    min-width: 250px;
+}
+
+.add-to-my-games-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--secondary-gradient);
+    transition: left var(--transition-normal);
+    z-index: -1;
+}
+
+.add-to-my-games-btn:hover::before {
+    left: 0;
+}
+
+.add-to-my-games-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: var(--shadow-neon), var(--shadow-neon-purple);
+    animation: var(--animation-pulse-neon);
+}
+
+.add-to-my-games-btn i {
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 4px currentColor);
+}
+
+.add-game-hint {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    margin: 0;
+    opacity: 0.8;
+}
+
+.add-game-hint::before {
+    content: '💡 ';
+    margin-right: var(--space-xs);
+}
+
+.game-already-added-section {
+    background: var(--bg-glass);
+    border: 2px solid var(--success-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-xl);
+    text-align: center;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.game-already-added-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(135deg, var(--success-color), var(--primary-color));
+    animation: var(--animation-pulse-neon);
+}
+
+.already-added-badge {
+    background: var(--success-color);
+    color: var(--terminal-black);
+    padding: var(--space-md) var(--space-xl);
+    border-radius: var(--radius-lg);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin: 0 auto;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+    min-width: 250px;
+}
+
+.already-added-badge i {
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 4px currentColor);
+}
+
+/* Responsive Design for Add to My Games */
+@media (max-width: 768px) {
+    .add-to-my-games-btn,
+    .already-added-badge {
+        min-width: auto;
+        width: 100%;
+        padding: var(--space-lg) var(--space-md);
+        font-size: 0.9rem;
+    }
+    
+    .add-to-my-games-section,
+    .game-already-added-section {
+        padding: var(--space-md);
+    }
+}
+
+/* Animation for when game is successfully added */
+@keyframes gameAdded {
+    0% {
+        transform: scale(1);
+        background: var(--primary-gradient);
+    }
+    50% {
+        transform: scale(1.1);
+        background: var(--success-color);
+    }
+    100% {
+        transform: scale(1);
+        background: var(--success-color);
+    }
+}
+
+.add-to-my-games-btn.success {
+    animation: gameAdded 0.6s ease-out;
+    background: var(--success-color) !important;
+    border-color: var(--success-color) !important;
+}
+
+.add-to-my-games-btn.success::before {
+    left: 0;
+    background: rgba(255, 255, 255, 0.2);
+}

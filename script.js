@@ -1718,6 +1718,89 @@ class TabletopTunes {
         
         this.showNotification(`"${gameName}" added to My Games!`);
     }
+
+    /**
+     * Add game to My Games without requiring music to be played
+     * This is the new functionality requested in the issue
+     */
+    addGameToMyGames(gameName, gameData = {}) {
+        if (!gameName) return;
+        
+        // Check if game is already in My Games
+        if (this.savedGames[gameName]) {
+            this.showNotification(`"${gameName}" is already in your My Games collection!`, 'info');
+            return;
+        }
+        
+        // Create game entry without updating play statistics
+        this.savedGames[gameName] = {
+            name: gameName,
+            dateAdded: new Date().toISOString(),
+            lastPlayed: null,
+            playCount: 0,
+            ...gameData
+        };
+        
+        // Save to localStorage
+        localStorage.setItem('tabletopTunes_savedGames', JSON.stringify(this.savedGames));
+        
+        this.showNotification(`"${gameName}" added to My Games!`, 'success');
+        
+        // If we're currently on the games closet tab, refresh it
+        const gamesClosetTab = document.getElementById('games-closet-tab');
+        if (gamesClosetTab && gamesClosetTab.classList.contains('active')) {
+            this.displayGamesCloset();
+        }
+    }
+
+    /**
+     * Add game from theme analysis to My Games 
+     */
+    addGameFromThemeAnalysis(gameName, detectedCategory) {
+        const gameData = {
+            source: 'theme_analysis',
+            detectedCategory: detectedCategory
+        };
+        
+        this.addGameToMyGames(gameName, gameData);
+        
+        // Refresh the current display to show "Already in My Games" 
+        if (this.currentBoardGame === gameName) {
+            const result = this.suggestByTheme(gameName);
+            if (result) {
+                this.displayThemeBasedSuggestions(result, gameName);
+            }
+        }
+    }
+
+    /**
+     * Add game from BGG data to My Games
+     */  
+    addGameFromBGG(gameName) {
+        // Use pendingGameData if available, otherwise create basic BGG game data
+        let gameData = { source: 'boardgamegeek' };
+        
+        if (this.pendingGameData && this.pendingGameData.name === gameName) {
+            gameData = {
+                source: this.pendingGameData.source,
+                bggData: this.pendingGameData.bggData,
+                detectedCategory: this.pendingGameData.detectedCategory
+            };
+        }
+        
+        this.addGameToMyGames(gameName, gameData);
+        
+        // Clear pending data since we've now saved the game
+        if (this.pendingGameData && this.pendingGameData.name === gameName) {
+            this.pendingGameData = null;
+        }
+        
+        // Refresh the current display to show "Already in My Games"
+        if (this.currentBoardGame === gameName) {
+            // Re-trigger the BGG search to refresh the display
+            this.searchBoardGame(gameName);
+        }
+    }
     
     /**
      * Save the currently pending game data when music is played for the first time
@@ -3419,6 +3502,29 @@ class TabletopTunes {
         
         let html = `<div class="game-suggestions bgg-suggestions">`;
         
+        // Check if game is already in My Games
+        const isGameInMyGames = this.savedGames[bggGame.name];
+        
+        // Add "Add to My Games" button if game is not already in collection
+        if (!isGameInMyGames) {
+            html += `
+                <div class="add-to-my-games-section">
+                    <button class="add-to-my-games-btn" onclick="tabletopTunes.addGameFromBGG('${bggGame.name}')">
+                        <i class="fas fa-plus-circle"></i> Add "${bggGame.name}" to My Games
+                    </button>
+                    <p class="add-game-hint">Add this game to your collection without needing to play music first!</p>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="game-already-added-section">
+                    <div class="already-added-badge">
+                        <i class="fas fa-check-circle"></i> Already in My Games
+                    </div>
+                </div>
+            `;
+        }
+        
         // Add BGG game info card
         html += `
             <div class="bgg-game-info">
@@ -3587,6 +3693,9 @@ class TabletopTunes {
         
         let html = `<div class="game-suggestions">`;
         
+        // Check if game is already in My Games
+        const isGameInMyGames = this.savedGames[gameName];
+        
         // Add theme analysis info at the top (similar to what we had before but more compact)
         html += `
             <div class="theme-analysis-header">
@@ -3606,6 +3715,26 @@ class TabletopTunes {
                 ` : ''}
             </div>
         `;
+        
+        // Add "Add to My Games" button if game is not already in collection
+        if (!isGameInMyGames) {
+            html += `
+                <div class="add-to-my-games-section">
+                    <button class="add-to-my-games-btn" onclick="tabletopTunes.addGameFromThemeAnalysis('${gameName}', '${result.category}')">
+                        <i class="fas fa-plus-circle"></i> Add "${gameName}" to My Games
+                    </button>
+                    <p class="add-game-hint">Add this game to your collection without needing to play music first!</p>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="game-already-added-section">
+                    <div class="already-added-badge">
+                        <i class="fas fa-check-circle"></i> Already in My Games
+                    </div>
+                </div>
+            `;
+        }
         
         // Display movie suggestions using the same format as displayGameSuggestions
         if (enhancedResult.suggestedSoundtracks) {
