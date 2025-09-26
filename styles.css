@@ -3031,6 +3031,328 @@ input:focus,
     }
 }
 
+/* ===============================================
+   🎮 Dynamic Visualizations System 
+   =============================================== */
+
+.dynamic-visualizations {
+    margin-top: var(--space-2xl);
+    padding: var(--space-xl);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--terminal-border);
+}
+
+.dynamic-visualizations h2 {
+    color: var(--text-accent);
+    margin-bottom: var(--space-xl);
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Visualization Tabs */
+.visualization-tabs {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+    flex-wrap: wrap;
+}
+
+.viz-tab-btn {
+    background: var(--bg-glass);
+    border: 1px solid var(--terminal-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md) var(--space-lg);
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.viz-tab-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--text-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-neon);
+}
+
+.viz-tab-btn.active {
+    background: var(--primary-gradient);
+    border-color: var(--primary-color);
+    color: var(--terminal-black);
+    box-shadow: var(--shadow-neon);
+}
+
+/* Visualization Display Area */
+.viz-display-area {
+    min-height: 400px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--terminal-border);
+    position: relative;
+    overflow: hidden;
+}
+
+.viz-content {
+    display: none;
+    padding: var(--space-xl);
+    height: 100%;
+    min-height: 400px;
+}
+
+.viz-content.active {
+    display: block;
+}
+
+/* Landscape Visualization */
+.landscape-canvas {
+    width: 100%;
+    height: 300px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: var(--radius-md);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: var(--space-lg);
+    box-shadow: inset 0 0 50px rgba(0, 255, 136, 0.1);
+}
+
+.landscape-canvas::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 30%, rgba(136, 51, 255, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 40% 80%, rgba(0, 204, 255, 0.2) 0%, transparent 50%);
+    animation: var(--animation-pulse-neon);
+}
+
+/* Meeple Stage */
+.meeple-stage {
+    width: 100%;
+    height: 300px;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    position: relative;
+    margin-bottom: var(--space-lg);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Dice Container */
+.dice-container {
+    width: 100%;
+    height: 300px;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    position: relative;
+    margin-bottom: var(--space-lg);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+
+.dice {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-gradient);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--terminal-black);
+    box-shadow: var(--shadow-neon);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.dice:hover {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.dice.rolling {
+    animation: spin-dice 1s ease-in-out;
+}
+
+/* Tableau Surface */
+.tableau-surface {
+    width: 100%;
+    height: 300px;
+    background: 
+        radial-gradient(circle at 50% 50%, var(--bg-card) 0%, var(--bg-secondary) 100%),
+        repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(0, 255, 136, 0.05) 20px, rgba(0, 255, 136, 0.05) 40px);
+    border-radius: var(--radius-md);
+    position: relative;
+    margin-bottom: var(--space-lg);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    padding: var(--space-lg);
+}
+
+.game-piece {
+    width: 40px;
+    height: 40px;
+    background: var(--secondary-gradient);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--terminal-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.game-piece:hover {
+    transform: scale(1.2) rotate(10deg);
+    box-shadow: var(--shadow-neon-purple);
+}
+
+/* Visualization Controls */
+.viz-controls {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.control-btn {
+    background: var(--bg-glass);
+    border: 1px solid var(--terminal-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md) var(--space-lg);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.control-btn:hover {
+    border-color: var(--accent-color);
+    box-shadow: var(--shadow-neon-cyan);
+    transform: translateY(-2px);
+}
+
+.control-btn:active {
+    transform: translateY(0);
+}
+
+/* Projection Controls */
+.projection-controls {
+    margin-top: var(--space-2xl);
+    padding: var(--space-xl);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--terminal-border);
+}
+
+.projection-controls h3 {
+    color: var(--text-accent);
+    margin-bottom: var(--space-lg);
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.projection-buttons {
+    display: flex;
+    gap: var(--space-lg);
+    justify-content: center;
+    margin-bottom: var(--space-xl);
+    flex-wrap: wrap;
+}
+
+.projection-btn {
+    background: var(--primary-gradient);
+    color: var(--terminal-black);
+    border: none;
+}
+
+.voice-btn {
+    background: var(--secondary-gradient);
+    color: var(--text-primary);
+    border: none;
+}
+
+.spotify-btn {
+    background: var(--spotify-dark);
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+}
+
+.connection-status {
+    display: flex;
+    gap: var(--space-xl);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-glass);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--terminal-border);
+}
+
+.status-label {
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+}
+
+.status-value {
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Animation Keyframes */
+@keyframes spin-dice {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes meeple-march {
+    0% { transform: translateX(-100px); }
+    100% { transform: translateX(calc(100vw + 100px)); }
+}
+
+@keyframes float-piece {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
 /* Print Styles */
 @media print {
     body {

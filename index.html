@@ -657,6 +657,116 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Dynamic Visualizations Section -->
+                <div class="dynamic-visualizations">
+                    <h2><i class="fas fa-magic"></i> Dynamic Game Visualizations</h2>
+                    
+                    <div class="visualization-tabs">
+                        <button class="viz-tab-btn active" data-viz="landscapes">
+                            <i class="fas fa-mountain"></i> Board Landscapes
+                        </button>
+                        <button class="viz-tab-btn" data-viz="meeples">
+                            <i class="fas fa-chess-pawn"></i> Meeple Parade
+                        </button>
+                        <button class="viz-tab-btn" data-viz="dice">
+                            <i class="fas fa-dice-d20"></i> Procedural Dice
+                        </button>
+                        <button class="viz-tab-btn" data-viz="tableau">
+                            <i class="fas fa-puzzle-piece"></i> Game Pieces
+                        </button>
+                    </div>
+
+                    <div class="viz-display-area">
+                        <div class="viz-content active" id="landscapes-viz">
+                            <div class="landscape-canvas" id="landscape-canvas"></div>
+                            <div class="viz-controls">
+                                <button class="control-btn" id="generate-landscape">Generate New Scene</button>
+                                <select id="landscape-theme">
+                                    <option value="fantasy">Fantasy Dungeon</option>
+                                    <option value="scifi">Sci-Fi Planet</option>
+                                    <option value="cityscape">Urban Cityscape</option>
+                                    <option value="forest">Mystical Forest</option>
+                                    <option value="desert">Desert Wasteland</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="viz-content" id="meeples-viz">
+                            <div class="meeple-stage" id="meeple-stage"></div>
+                            <div class="viz-controls">
+                                <button class="control-btn" id="start-parade">Start Parade</button>
+                                <button class="control-btn" id="change-meeples">Change Style</button>
+                                <select id="meeple-theme">
+                                    <option value="classic">Classic Meeples</option>
+                                    <option value="fantasy">Fantasy Characters</option>
+                                    <option value="scifi">Sci-Fi Units</option>
+                                    <option value="horror">Horror Figures</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="viz-content" id="dice-viz">
+                            <div class="dice-container" id="dice-container"></div>
+                            <div class="viz-controls">
+                                <button class="control-btn" id="roll-dice">Roll Dice</button>
+                                <button class="control-btn" id="add-dice">Add Dice</button>
+                                <select id="dice-type">
+                                    <option value="d6">D6 (6-sided)</option>
+                                    <option value="d20">D20 (20-sided)</option>
+                                    <option value="d12">D12 (12-sided)</option>
+                                    <option value="d10">D10 (10-sided)</option>
+                                    <option value="d8">D8 (8-sided)</option>
+                                    <option value="d4">D4 (4-sided)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="viz-content" id="tableau-viz">
+                            <div class="tableau-surface" id="tableau-surface"></div>
+                            <div class="viz-controls">
+                                <button class="control-btn" id="shuffle-pieces">Shuffle Pieces</button>
+                                <button class="control-btn" id="generate-cards">Generate Cards</button>
+                                <select id="game-style">
+                                    <option value="eurogame">Euro Game Style</option>
+                                    <option value="ameritrash">Ameritrash Style</option>
+                                    <option value="abstract">Abstract Strategy</option>
+                                    <option value="party">Party Game</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Projection Controls -->
+                    <div class="projection-controls">
+                        <h3><i class="fas fa-tv"></i> TV Projection & Voice Control</h3>
+                        <div class="projection-buttons">
+                            <button class="control-btn projection-btn" id="project-to-tv">
+                                <i class="fas fa-external-link-alt"></i> Project to TV
+                            </button>
+                            <button class="control-btn voice-btn" id="enable-voice">
+                                <i class="fas fa-microphone"></i> Enable Voice Control
+                            </button>
+                            <button class="control-btn spotify-btn" id="connect-spotify-mini">
+                                <i class="fab fa-spotify"></i> Connect Google Mini
+                            </button>
+                        </div>
+                        <div class="connection-status">
+                            <div class="status-item">
+                                <span class="status-label">TV:</span>
+                                <span class="status-value" id="tv-status">Disconnected</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Voice:</span>
+                                <span class="status-value" id="voice-status">Inactive</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Spotify:</span>
+                                <span class="status-value" id="spotify-mini-status">Disconnected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
 
