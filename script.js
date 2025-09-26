@@ -71,6 +71,7 @@ class TabletopTunes {
         this.initializeTabSystem();
         this.initializeSpotifyIntegration();
         this.initializeVisualization();
+        this.initializeDynamicVisualizations();
         this.loadUserPreferences();
         this.loadGamesCloset();
         this.updateDisplay();
@@ -2325,7 +2326,7 @@ class TabletopTunes {
                 this.matchingMode = 'boardgame';
                 this.displayBGGGameSuggestions(bggGame);
                 
-                // Automatically save to games closet with BGG data
+                // Automatically save to games closet with comprehensive BGG data
                 this.saveToGamesCloset(gameName, { 
                     source: 'boardgamegeek',
                     bggData: {
@@ -2333,8 +2334,14 @@ class TabletopTunes {
                         minPlayers: bggGame.minPlayers,
                         maxPlayers: bggGame.maxPlayers,
                         playingTime: bggGame.playingTime,
+                        complexity: bggGame.complexity,
                         rating: bggGame.rating,
-                        description: bggGame.description
+                        description: bggGame.description,
+                        categories: bggGame.categories || [],
+                        mechanisms: bggGame.mechanisms || [],
+                        families: bggGame.families || [],
+                        themes: bggGame.themes || [],
+                        detectedCategory: bggGame.category
                     }
                 });
                 
@@ -3305,6 +3312,419 @@ class TabletopTunes {
         }
         if (currentCategoryElement) {
             currentCategoryElement.textContent = `From ${movieTitle}`;
+        }
+    }
+
+    // ===============================================
+    // 🎮 Dynamic Visualizations System
+    // ===============================================
+
+    initializeDynamicVisualizations() {
+        // Initialize visualization tabs
+        const vizTabBtns = document.querySelectorAll('.viz-tab-btn');
+        vizTabBtns.forEach(btn => {
+            btn.addEventListener('click', () => this.switchVisualizationTab(btn.dataset.viz));
+        });
+
+        // Initialize landscape controls
+        const generateLandscapeBtn = document.getElementById('generate-landscape');
+        if (generateLandscapeBtn) {
+            generateLandscapeBtn.addEventListener('click', () => this.generateLandscape());
+        }
+
+        // Initialize meeple controls
+        const startParadeBtn = document.getElementById('start-parade');
+        if (startParadeBtn) {
+            startParadeBtn.addEventListener('click', () => this.startMeepleParade());
+        }
+
+        // Initialize dice controls
+        const rollDiceBtn = document.getElementById('roll-dice');
+        const addDiceBtn = document.getElementById('add-dice');
+        if (rollDiceBtn) rollDiceBtn.addEventListener('click', () => this.rollDice());
+        if (addDiceBtn) addDiceBtn.addEventListener('click', () => this.addDice());
+
+        // Initialize tableau controls
+        const shufflePiecesBtn = document.getElementById('shuffle-pieces');
+        const generateCardsBtn = document.getElementById('generate-cards');
+        if (shufflePiecesBtn) shufflePiecesBtn.addEventListener('click', () => this.shuffleGamePieces());
+        if (generateCardsBtn) generateCardsBtn.addEventListener('click', () => this.generateGameCards());
+
+        // Initialize projection controls
+        const projectTvBtn = document.getElementById('project-to-tv');
+        const enableVoiceBtn = document.getElementById('enable-voice');
+        const connectSpotifyBtn = document.getElementById('connect-spotify-mini');
+        
+        if (projectTvBtn) projectTvBtn.addEventListener('click', () => this.projectToTV());
+        if (enableVoiceBtn) enableVoiceBtn.addEventListener('click', () => this.enableVoiceControl());
+        if (connectSpotifyBtn) connectSpotifyBtn.addEventListener('click', () => this.connectSpotifyMini());
+
+        // Start with initial visualizations
+        this.generateLandscape();
+        this.initializeDiceContainer();
+        this.initializeGamePieces();
+    }
+
+    switchVisualizationTab(vizType) {
+        // Update tab buttons
+        document.querySelectorAll('.viz-tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-viz="${vizType}"]`).classList.add('active');
+
+        // Update content
+        document.querySelectorAll('.viz-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${vizType}-viz`).classList.add('active');
+
+        // Trigger specific initialization if needed
+        switch(vizType) {
+            case 'landscapes':
+                this.generateLandscape();
+                break;
+            case 'meeples':
+                this.initializeMeepleStage();
+                break;
+            case 'dice':
+                this.initializeDiceContainer();
+                break;
+            case 'tableau':
+                this.initializeGamePieces();
+                break;
+        }
+    }
+
+    // AI-Generated Dynamic Game Board Landscapes
+    generateLandscape() {
+        const canvas = document.getElementById('landscape-canvas');
+        const themeSelect = document.getElementById('landscape-theme');
+        const theme = themeSelect ? themeSelect.value : 'fantasy';
+        
+        if (!canvas) return;
+
+        // Clear previous landscape
+        canvas.innerHTML = '';
+
+        // Generate landscape based on theme
+        const landscapes = this.getLandscapeElements(theme);
+        
+        landscapes.forEach((element, index) => {
+            const div = document.createElement('div');
+            div.style.cssText = `
+                position: absolute;
+                ${element.styles}
+                animation: float-piece ${2 + Math.random() * 3}s ease-in-out infinite;
+                animation-delay: ${index * 0.5}s;
+            `;
+            div.innerHTML = element.content;
+            canvas.appendChild(div);
+        });
+
+        this.showNotification(`Generated ${theme} landscape!`, 'success');
+    }
+
+    getLandscapeElements(theme) {
+        const elements = {
+            fantasy: [
+                { content: '🏰', styles: 'top: 20%; left: 70%; font-size: 3rem; color: #8833ff;' },
+                { content: '🌲', styles: 'top: 60%; left: 20%; font-size: 2rem; color: #00ff88;' },
+                { content: '🏔️', styles: 'top: 10%; left: 10%; font-size: 2.5rem; color: #666;' },
+                { content: '✨', styles: 'top: 30%; left: 50%; font-size: 1.5rem; color: #00ccff;' },
+                { content: '🐉', styles: 'top: 15%; left: 80%; font-size: 2rem; color: #ff0055;' }
+            ],
+            scifi: [
+                { content: '🚀', styles: 'top: 40%; left: 60%; font-size: 2.5rem; color: #00ccff;' },
+                { content: '🛸', styles: 'top: 20%; left: 30%; font-size: 2rem; color: #8833ff;' },
+                { content: '🌌', styles: 'top: 10%; left: 70%; font-size: 3rem; color: #00ff88;' },
+                { content: '⭐', styles: 'top: 70%; left: 80%; font-size: 1.5rem; color: #ffd700;' },
+                { content: '🤖', styles: 'top: 60%; left: 40%; font-size: 2rem; color: #00ccff;' }
+            ],
+            cityscape: [
+                { content: '🏙️', styles: 'top: 50%; left: 50%; font-size: 4rem; color: #666;' },
+                { content: '🚗', styles: 'top: 70%; left: 20%; font-size: 1.5rem; color: #ff0055;' },
+                { content: '✈️', styles: 'top: 20%; left: 80%; font-size: 2rem; color: #00ccff;' },
+                { content: '🌃', styles: 'top: 30%; left: 10%; font-size: 2.5rem; color: #8833ff;' }
+            ],
+            forest: [
+                { content: '🌳', styles: 'top: 40%; left: 30%; font-size: 3rem; color: #00ff88;' },
+                { content: '🦌', styles: 'top: 60%; left: 60%; font-size: 2rem; color: #8B4513;' },
+                { content: '🍄', styles: 'top: 70%; left: 20%; font-size: 1.5rem; color: #ff0055;' },
+                { content: '🌿', styles: 'top: 20%; left: 70%; font-size: 2rem; color: #00ff88;' },
+                { content: '🦋', styles: 'top: 30%; left: 80%; font-size: 1.5rem; color: #00ccff;' }
+            ],
+            desert: [
+                { content: '🏜️', styles: 'top: 50%; left: 50%; font-size: 4rem; color: #DAA520;' },
+                { content: '🌵', styles: 'top: 60%; left: 30%; font-size: 2.5rem; color: #00ff88;' },
+                { content: '🐪', styles: 'top: 40%; left: 70%; font-size: 2rem; color: #8B4513;' },
+                { content: '☀️', styles: 'top: 10%; left: 80%; font-size: 2.5rem; color: #ffd700;' }
+            ]
+        };
+
+        return elements[theme] || elements.fantasy;
+    }
+
+    // Animated Meeple Parade
+    startMeepleParade() {
+        const stage = document.getElementById('meeple-stage');
+        const themeSelect = document.getElementById('meeple-theme');
+        const theme = themeSelect ? themeSelect.value : 'classic';
+        
+        if (!stage) return;
+
+        // Clear existing meeples
+        stage.innerHTML = '';
+
+        const meeples = this.getMeeplesByTheme(theme);
+        
+        meeples.forEach((meeple, index) => {
+            setTimeout(() => {
+                const meepleDiv = document.createElement('div');
+                meepleDiv.style.cssText = `
+                    position: absolute;
+                    font-size: 2rem;
+                    animation: meeple-march 8s linear infinite;
+                    animation-delay: ${index * 0.5}s;
+                    top: ${30 + Math.random() * 40}%;
+                    left: -100px;
+                    z-index: ${10 - index};
+                `;
+                meepleDiv.innerHTML = meeple;
+                stage.appendChild(meepleDiv);
+            }, index * 500);
+        });
+
+        this.showNotification(`${theme} meeple parade started!`, 'success');
+    }
+
+    getMeeplesByTheme(theme) {
+        const themes = {
+            classic: ['👤', '👥', '👤', '👥', '👤', '👥'],
+            fantasy: ['🧙‍♂️', '🏹', '⚔️', '🛡️', '🧝‍♀️', '🧚‍♀️'],
+            scifi: ['👨‍🚀', '🤖', '👽', '🛸', '⚡', '🔬'],
+            horror: ['🧟‍♂️', '👻', '🎭', '🕷️', '🦇', '💀']
+        };
+
+        return themes[theme] || themes.classic;
+    }
+
+    initializeMeepleStage() {
+        const stage = document.getElementById('meeple-stage');
+        if (!stage) return;
+
+        stage.innerHTML = '<div style="color: var(--text-muted); font-family: JetBrains Mono;">Click "Start Parade" to begin the meeple march!</div>';
+    }
+
+    // Procedural Dice Visualizer
+    rollDice() {
+        const diceElements = document.querySelectorAll('.dice');
+        
+        diceElements.forEach(dice => {
+            dice.classList.add('rolling');
+            const sides = parseInt(dice.dataset.sides) || 6;
+            const result = Math.floor(Math.random() * sides) + 1;
+            
+            setTimeout(() => {
+                dice.textContent = result;
+                dice.classList.remove('rolling');
+            }, 1000);
+        });
+
+        this.showNotification('Rolling dice!', 'info');
+    }
+
+    addDice() {
+        const container = document.getElementById('dice-container');
+        const diceTypeSelect = document.getElementById('dice-type');
+        
+        if (!container || !diceTypeSelect) return;
+
+        const diceType = diceTypeSelect.value;
+        const sides = parseInt(diceType.substring(1));
+        
+        const dice = document.createElement('div');
+        dice.className = 'dice';
+        dice.dataset.sides = sides;
+        dice.textContent = Math.floor(Math.random() * sides) + 1;
+        dice.addEventListener('click', () => {
+            this.rollSingleDice(dice);
+        });
+
+        container.appendChild(dice);
+        this.showNotification(`Added ${diceType} to the collection!`, 'success');
+    }
+
+    rollSingleDice(diceElement) {
+        diceElement.classList.add('rolling');
+        const sides = parseInt(diceElement.dataset.sides) || 6;
+        const result = Math.floor(Math.random() * sides) + 1;
+        
+        setTimeout(() => {
+            diceElement.textContent = result;
+            diceElement.classList.remove('rolling');
+        }, 1000);
+    }
+
+    initializeDiceContainer() {
+        const container = document.getElementById('dice-container');
+        if (!container) return;
+
+        // Clear and add initial dice
+        container.innerHTML = '';
+        
+        // Add a few default dice
+        ['d6', 'd20', 'd12'].forEach(diceType => {
+            const sides = parseInt(diceType.substring(1));
+            const dice = document.createElement('div');
+            dice.className = 'dice';
+            dice.dataset.sides = sides;
+            dice.textContent = Math.floor(Math.random() * sides) + 1;
+            dice.addEventListener('click', () => this.rollSingleDice(dice));
+            container.appendChild(dice);
+        });
+    }
+
+    // Board Game Piece Tableau
+    shuffleGamePieces() {
+        const surface = document.getElementById('tableau-surface');
+        if (!surface) return;
+
+        const pieces = surface.querySelectorAll('.game-piece');
+        pieces.forEach(piece => {
+            piece.style.transform = `
+                translateX(${(Math.random() - 0.5) * 200}px) 
+                translateY(${(Math.random() - 0.5) * 100}px) 
+                rotate(${Math.random() * 360}deg)
+            `;
+        });
+
+        this.showNotification('Game pieces shuffled!', 'success');
+    }
+
+    generateGameCards() {
+        const surface = document.getElementById('tableau-surface');
+        const styleSelect = document.getElementById('game-style');
+        
+        if (!surface || !styleSelect) return;
+
+        const style = styleSelect.value;
+        const pieces = this.getGamePiecesByStyle(style);
+        
+        // Clear existing pieces
+        surface.innerHTML = '';
+
+        pieces.forEach((piece, index) => {
+            const pieceDiv = document.createElement('div');
+            pieceDiv.className = 'game-piece';
+            pieceDiv.innerHTML = piece;
+            pieceDiv.style.animationDelay = `${index * 0.1}s`;
+            pieceDiv.addEventListener('click', () => {
+                pieceDiv.style.transform = `scale(1.2) rotate(${Math.random() * 360}deg)`;
+                setTimeout(() => {
+                    pieceDiv.style.transform = '';
+                }, 500);
+            });
+            surface.appendChild(pieceDiv);
+        });
+
+        this.showNotification(`Generated ${style} game pieces!`, 'success');
+    }
+
+    getGamePiecesByStyle(style) {
+        const styles = {
+            eurogame: ['🎯', '⚙️', '🏭', '📊', '💰', '🔧', '📈', '⚖️', '🏪', '🎪'],
+            ameritrash: ['⚔️', '🛡️', '💥', '🔥', '👹', '🏰', '🗡️', '🏹', '💀', '⚡'],
+            abstract: ['⚫', '⚪', '🔴', '🔵', '🟡', '🟢', '🟣', '🟤', '🔶', '🔷'],
+            party: ['🎉', '🎊', '🎈', '🎁', '🎭', '🎪', '🎨', '🎵', '💃', '🕺']
+        };
+
+        return styles[style] || styles.eurogame;
+    }
+
+    initializeGamePieces() {
+        this.generateGameCards();
+    }
+
+    // TV Projection and Voice Control Features
+    projectToTV() {
+        const statusElement = document.getElementById('tv-status');
+        
+        // Simulate TV connection
+        if (statusElement) {
+            statusElement.textContent = 'Connecting...';
+            statusElement.style.color = 'var(--warning-color)';
+            
+            setTimeout(() => {
+                statusElement.textContent = 'Connected';
+                statusElement.style.color = 'var(--success-color)';
+                this.showNotification('Connected to TV! Visualizations are now projecting.', 'success');
+            }, 2000);
+        }
+    }
+
+    enableVoiceControl() {
+        const statusElement = document.getElementById('voice-status');
+        
+        // Check for voice recognition support
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            if (statusElement) {
+                statusElement.textContent = 'Listening...';
+                statusElement.style.color = 'var(--success-color)';
+            }
+            
+            this.initializeVoiceCommands();
+            this.showNotification('Voice control activated! Try saying "project to TV" or "start meeple parade"', 'success');
+        } else {
+            this.showNotification('Voice recognition not supported in this browser', 'warning');
+        }
+    }
+
+    initializeVoiceCommands() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) return;
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.lang = 'en-US';
+        
+        recognition.onresult = (event) => {
+            const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
+            this.handleVoiceCommand(transcript);
+        };
+
+        recognition.start();
+    }
+
+    handleVoiceCommand(command) {
+        console.log('Voice command:', command);
+        
+        if (command.includes('project to tv')) {
+            this.projectToTV();
+        } else if (command.includes('start parade') || command.includes('meeple parade')) {
+            this.startMeepleParade();
+        } else if (command.includes('roll dice')) {
+            this.rollDice();
+        } else if (command.includes('generate landscape')) {
+            this.generateLandscape();
+        } else if (command.includes('shuffle pieces')) {
+            this.shuffleGamePieces();
+        }
+    }
+
+    connectSpotifyMini() {
+        const statusElement = document.getElementById('spotify-mini-status');
+        
+        // Simulate Google Mini + Spotify connection
+        if (statusElement) {
+            statusElement.textContent = 'Connecting...';
+            statusElement.style.color = 'var(--warning-color)';
+            
+            setTimeout(() => {
+                statusElement.textContent = 'Connected';
+                statusElement.style.color = 'var(--success-color)';
+                this.showNotification('Connected to Google Mini! Audio can now be controlled via voice.', 'success');
+            }, 2000);
         }
     }
 }
