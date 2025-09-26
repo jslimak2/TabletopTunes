@@ -2079,6 +2079,7 @@ class TabletopTunes {
         
         try {
             const result = await this.searchBoardGame(gameInput);
+            console.log('Search result:', result, 'has suggestedSoundtracks:', !!result?.suggestedSoundtracks);
             if (!result) {
                 this.showNotification(`No specific suggestions found for "${gameInput}". Try browsing categories or popular games.`);
                 // Reset to category browsing
@@ -2086,12 +2087,14 @@ class TabletopTunes {
                 this.currentBoardGame = null;
                 const playlistTitle = document.querySelector('.playlist-section h3');
                 if (playlistTitle) playlistTitle.textContent = 'Current Playlist';
-            } else if (result.category) {
-                // Handle theme-based results
+            } else if (result.category && !result.suggestedSoundtracks) {
+                // Handle theme-based results only (not game database results)
+                console.log('Calling displayThemeBasedSuggestions for:', gameInput);
                 this.currentBoardGame = gameInput;
                 this.matchingMode = 'boardgame';
                 this.displayThemeBasedSuggestions(result, gameInput);
             }
+            // If result has suggestedSoundtracks, displayGameSuggestions was already called in searchBoardGame
         } catch (error) {
             console.error('Game search error:', error);
             this.showNotification('Error searching for game. Please try again.');
@@ -2099,10 +2102,12 @@ class TabletopTunes {
     }
 
     async searchBoardGame(gameName) {
+        console.log('searchBoardGame called with:', gameName);
         // First, check local database for exact match
         if (typeof BOARD_GAMES_DATABASE !== 'undefined') {
             const game = BOARD_GAMES_DATABASE[gameName];
             if (game) {
+                console.log('Found exact match in database:', game);
                 this.currentBoardGame = gameName;
                 this.matchingMode = 'boardgame';
                 this.displayGameSuggestions(game);
@@ -2110,6 +2115,7 @@ class TabletopTunes {
                 // Automatically save to games closet
                 this.saveToGamesCloset(gameName, { source: 'local_database' });
                 
+                console.log('Returning game object with suggestedSoundtracks:', !!game.suggestedSoundtracks);
                 return game;
             }
         }
@@ -2578,7 +2584,7 @@ class TabletopTunes {
         const trackList = document.getElementById('track-list');
         const categoryTitle = document.querySelector('.playlist-section h3');
         
-        if (categoryTitle) categoryTitle.textContent = `Theme-Based Suggestions for ${gameName}`;
+        if (categoryTitle) categoryTitle.textContent = `Movie Soundtrack Recommendations for ${gameName}`;
         
         // Add null safety checks
         if (!result) {
@@ -2587,12 +2593,23 @@ class TabletopTunes {
         }
         
         // Ensure required properties exist with fallbacks
+        // Map game categories to soundtrack categories
+        const categoryMapping = {
+            'cooperative': 'adventure',    // Cooperative games → Adventure soundtracks
+            'strategy': 'ambient',         // Strategy games → Ambient soundtracks
+            'adventure': 'adventure',      // Adventure games → Adventure soundtracks
+            'thematic': 'fantasy'          // Thematic games → Fantasy soundtracks
+        };
+        
+        const mappedCategory = categoryMapping[result.category] || result.category || 'ambient';
+        const categoryTracks = this.soundtracks[mappedCategory] || this.soundtracks['ambient'] || [];
+        
         const safeResult = {
-            reason: result.reason || 'Theme analysis completed',
+            reason: result.reason || `We've analyzed "${gameName}" and found the perfect soundtrack category!`,
             confidence: result.confidence || 50,
             detectedKeywords: result.detectedKeywords || [],
-            category: result.category || 'ambient',
-            tracks: result.tracks || []
+            category: mappedCategory,
+            tracks: result.tracks || categoryTracks
         };
         
         let html = `<div class="game-suggestions theme-suggestions">`;
@@ -2632,10 +2649,10 @@ class TabletopTunes {
                 <div class="category-header">
                     <h4><i class="fas fa-${this.getCategoryIcon(safeResult.category)}"></i> ${safeResult.category.charAt(0).toUpperCase() + safeResult.category.slice(1)} Soundtracks</h4>
                     <div class="suggested-badge">
-                        <i class="fas fa-magic"></i> Suggested
+                        <i class="fas fa-magic"></i> Recommended
                     </div>
                 </div>
-                <p class="category-description">Based on theme analysis, we suggest ${safeResult.category} soundtracks</p>
+                <p class="category-description">Perfect movie soundtracks for ${gameName} - click to start playing!</p>
                 <div class="sample-tracks">
                     ${safeResult.tracks.length > 0 ? 
                         safeResult.tracks.slice(0, 3).map(track => `
@@ -2646,7 +2663,7 @@ class TabletopTunes {
                         `).join('') : 
                         '<div class="no-tracks">No tracks available for this category</div>'
                     }
-                    ${safeResult.tracks.length > 3 ? `<div class="more-tracks">+${safeResult.tracks.length - 3} more tracks</div>` : ''}
+                    ${safeResult.tracks.length > 3 ? `<div class="more-tracks">+${safeResult.tracks.length - 3} more tracks - click to see all!</div>` : ''}
                 </div>
             </div>
         `;

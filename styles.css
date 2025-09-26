@@ -455,6 +455,51 @@ header p::after {
     color: var(--accent-color);
 }
 
+.how-it-works-quick {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--bg-glass);
+    border: 1px solid var(--terminal-border);
+    border-radius: var(--radius-lg);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    backdrop-filter: blur(10px);
+    flex-wrap: wrap;
+}
+
+.how-it-works-step {
+    color: var(--text-primary);
+    font-weight: 500;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--terminal-border);
+    white-space: nowrap;
+}
+
+.how-it-works-quick .arrow {
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 5px rgba(0, 255, 136, 0.5));
+}
+
+@media (max-width: 768px) {
+    .how-it-works-quick {
+        font-size: 0.8rem;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+    }
+    
+    .how-it-works-quick .arrow {
+        display: none;
+    }
+}
+
 /* 🎯 Enhanced Action Row with Terminal Style */
 .action-row {
     display: flex;
