@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TabletopTunes - TV Display Mode</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #21262d;
+            --terminal-green: #00ff41;
+            --terminal-blue: #00bfff;
+            --terminal-border: #30363d;
+            --text-primary: #e6edf3;
+            --text-muted: #8b949e;
+            --accent-color: #58a6ff;
+            --success-color: #238636;
+            --warning-color: #d29922;
+            --error-color: #da3633;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            cursor: none;
+        }
+
+        .display-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #21262d 100%);
+        }
+
+        .visualization-area {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .landscape-canvas {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .landscape-element {
+            position: absolute;
+            font-size: 3rem;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        .landscape-element.music-reactive {
+            transform-origin: center;
+        }
+
+        .control-overlay {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(13, 17, 23, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--terminal-border);
+            border-radius: 12px;
+            padding: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .control-overlay:hover,
+        .control-overlay.show {
+            opacity: 1;
+        }
+
+        .control-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--terminal-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            margin: 0 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            background: var(--accent-color);
+            color: var(--bg-primary);
+        }
+
+        .qr-overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(13, 17, 23, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--terminal-border);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .qr-overlay.show {
+            opacity: 1;
+        }
+
+        .qr-code {
+            width: 120px;
+            height: 120px;
+            background: white;
+            margin: 0 auto 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: #000;
+        }
+
+        .theme-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(13, 17, 23, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--terminal-border);
+            border-radius: 12px;
+            padding: 10px 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        .music-visualizer {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 3px;
+            align-items: end;
+        }
+
+        .visualizer-bar {
+            width: 4px;
+            background: var(--terminal-green);
+            border-radius: 2px;
+            transition: height 0.1s ease;
+            opacity: 0.7;
+        }
+
+        /* Animation classes for music reactivity */
+        .pulse {
+            animation: pulse 0.1s ease-in-out;
+        }
+
+        .beat-flash {
+            animation: beatFlash 0.2s ease-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes beatFlash {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; filter: brightness(1.5); }
+            100% { opacity: 0.8; }
+        }
+
+        @keyframes float-piece {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+
+        /* Fullscreen styles */
+        .fullscreen .control-overlay,
+        .fullscreen .qr-overlay,
+        .fullscreen .theme-indicator,
+        .fullscreen .music-visualizer {
+            display: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .landscape-element {
+                font-size: 2rem;
+            }
+            
+            .control-overlay,
+            .qr-overlay,
+            .theme-indicator {
+                font-size: 0.7rem;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="display-container" id="display-container">
+        <!-- Main Visualization Area -->
+        <div class="visualization-area">
+            <div class="landscape-canvas" id="landscape-canvas">
+                <!-- Dynamic content will be generated here -->
+            </div>
+        </div>
+
+        <!-- QR Code for Easy Casting -->
+        <div class="qr-overlay" id="qr-overlay">
+            <div class="qr-code">
+                <i class="fas fa-qrcode" style="font-size: 2rem;"></i>
+            </div>
+            <div style="font-size: 0.7rem; color: var(--text-muted);">
+                Scan to control from phone
+            </div>
+        </div>
+
+        <!-- Theme Indicator -->
+        <div class="theme-indicator" id="theme-indicator">
+            <i class="fas fa-mountain"></i> Fantasy Dungeon
+        </div>
+
+        <!-- Music Visualizer -->
+        <div class="music-visualizer" id="music-visualizer">
+            <!-- Visualizer bars will be generated here -->
+        </div>
+
+        <!-- Control Overlay -->
+        <div class="control-overlay" id="control-overlay">
+            <button class="control-btn" onclick="toggleTheme()">
+                <i class="fas fa-palette"></i> Theme
+            </button>
+            <button class="control-btn" onclick="toggleFullscreen()">
+                <i class="fas fa-expand"></i> Fullscreen
+            </button>
+            <button class="control-btn" onclick="returnToMain()">
+                <i class="fas fa-arrow-left"></i> Return
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class DisplayModeVisualizer {
+            constructor() {
+                this.themes = {
+                    fantasy: {
+                        name: 'Fantasy Dungeon',
+                        icon: 'fas fa-mountain',
+                        elements: ['🏰', '🌲', '🏔️', '✨', '🐉', '⚔️', '🛡️', '🗡️']
+                    },
+                    scifi: {
+                        name: 'Sci-Fi Planet',
+                        icon: 'fas fa-rocket',
+                        elements: ['🚀', '🛸', '🌌', '⭐', '🌠', '👽', '🔬', '🤖']
+                    },
+                    horror: {
+                        name: 'Horror Night',
+                        icon: 'fas fa-ghost',
+                        elements: ['👻', '🎃', '🦇', '🕷️', '💀', '🕯️', '🌙', '⚰️']
+                    },
+                    tavern: {
+                        name: 'Tavern Hall',
+                        icon: 'fas fa-beer',
+                        elements: ['🍺', '🥨', '🎭', '🎲', '🍖', '🔥', '🎪', '🎯']
+                    }
+                };
+                
+                this.currentTheme = 'fantasy';
+                this.audioContext = null;
+                this.analyser = null;
+                this.dataArray = null;
+                this.animationFrame = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.setupAudioContext();
+                this.generateLandscape();
+                this.createMusicVisualizer();
+                this.startVisualizationLoop();
+                this.setupEventListeners();
+                
+                // Show controls briefly on load
+                setTimeout(() => {
+                    document.getElementById('control-overlay').classList.add('show');
+                    document.getElementById('qr-overlay').classList.add('show');
+                    setTimeout(() => {
+                        document.getElementById('control-overlay').classList.remove('show');
+                        document.getElementById('qr-overlay').classList.remove('show');
+                    }, 3000);
+                }, 500);
+                
+                // Auto-generate new landscape every 30 seconds
+                setInterval(() => this.generateLandscape(), 30000);
+            }
+
+            setupAudioContext() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.analyser = this.audioContext.createAnalyser();
+                    this.analyser.fftSize = 256;
+                    this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                } catch (e) {
+                    console.log('Web Audio API not supported, using simulation');
+                    this.useSimulation = true;
+                }
+            }
+
+            generateLandscape() {
+                const canvas = document.getElementById('landscape-canvas');
+                const theme = this.themes[this.currentTheme];
+                
+                // Clear existing elements
+                canvas.innerHTML = '';
+                
+                // Update theme indicator
+                document.getElementById('theme-indicator').innerHTML = 
+                    `<i class="${theme.icon}"></i> ${theme.name}`;
+                
+                // Generate random landscape elements
+                const numElements = 15 + Math.floor(Math.random() * 10);
+                
+                for (let i = 0; i < numElements; i++) {
+                    const element = document.createElement('div');
+                    element.className = 'landscape-element music-reactive';
+                    element.innerHTML = theme.elements[Math.floor(Math.random() * theme.elements.length)];
+                    
+                    // Random positioning
+                    element.style.left = Math.random() * 90 + '%';
+                    element.style.top = Math.random() * 90 + '%';
+                    element.style.fontSize = (1.5 + Math.random() * 2) + 'rem';
+                    element.style.animationDelay = Math.random() * 3 + 's';
+                    element.style.animation = `float-piece ${3 + Math.random() * 4}s ease-in-out infinite`;
+                    
+                    canvas.appendChild(element);
+                }
+            }
+
+            createMusicVisualizer() {
+                const visualizer = document.getElementById('music-visualizer');
+                visualizer.innerHTML = '';
+                
+                for (let i = 0; i < 20; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'visualizer-bar';
+                    bar.style.height = '5px';
+                    visualizer.appendChild(bar);
+                }
+            }
+
+            startVisualizationLoop() {
+                const animate = () => {
+                    this.updateMusicReactiveElements();
+                    this.animationFrame = requestAnimationFrame(animate);
+                };
+                animate();
+            }
+
+            updateMusicReactiveElements() {
+                const audioData = this.getAudioData();
+                const elements = document.querySelectorAll('.landscape-element');
+                const visualizerBars = document.querySelectorAll('.visualizer-bar');
+                
+                // Update visualizer bars
+                visualizerBars.forEach((bar, index) => {
+                    const value = this.useSimulation ? 
+                        Math.random() * 100 : 
+                        (this.dataArray[index] / 255) * 100;
+                    bar.style.height = Math.max(5, value) + 'px';
+                });
+                
+                // Update landscape elements based on audio
+                elements.forEach((element, index) => {
+                    const intensity = audioData.volume;
+                    const scale = 1 + (intensity * 0.3);
+                    
+                    element.style.transform = `scale(${scale})`;
+                    element.style.filter = `brightness(${1 + intensity * 0.5})`;
+                    
+                    // Beat detection
+                    if (audioData.beat) {
+                        element.classList.add('beat-flash');
+                        setTimeout(() => element.classList.remove('beat-flash'), 200);
+                    }
+                    
+                    // Frequency-based color shifts
+                    if (audioData.bass > 0.7) {
+                        element.style.filter += ` hue-rotate(${audioData.bass * 60}deg)`;
+                    }
+                });
+            }
+
+            getAudioData() {
+                if (this.useSimulation) {
+                    return this.simulateAudioData();
+                }
+                
+                if (this.analyser && this.dataArray) {
+                    this.analyser.getByteFrequencyData(this.dataArray);
+                    
+                    const average = this.dataArray.reduce((a, b) => a + b) / this.dataArray.length;
+                    const bass = this.dataArray.slice(0, 10).reduce((a, b) => a + b) / 10;
+                    const mid = this.dataArray.slice(10, 50).reduce((a, b) => a + b) / 40;
+                    const treble = this.dataArray.slice(50).reduce((a, b) => a + b) / (this.dataArray.length - 50);
+                    
+                    return {
+                        volume: average / 255,
+                        bass: bass / 255,
+                        mid: mid / 255,
+                        treble: treble / 255,
+                        beat: average > 150 ? 1 : 0
+                    };
+                }
+                
+                return this.simulateAudioData();
+            }
+
+            simulateAudioData() {
+                const time = Date.now() / 1000;
+                return {
+                    volume: 0.3 + 0.7 * Math.sin(time * 2) * Math.sin(time * 0.7),
+                    bass: 0.2 + 0.8 * Math.sin(time * 1.5),
+                    mid: 0.3 + 0.7 * Math.sin(time * 2.2),
+                    treble: 0.4 + 0.6 * Math.sin(time * 3.1),
+                    beat: Math.sin(time * 2.5) > 0.8 ? 1 : 0
+                };
+            }
+
+            setupEventListeners() {
+                // Mouse movement shows controls temporarily
+                let hideControlsTimeout;
+                document.addEventListener('mousemove', () => {
+                    document.getElementById('control-overlay').classList.add('show');
+                    document.getElementById('qr-overlay').classList.add('show');
+                    
+                    clearTimeout(hideControlsTimeout);
+                    hideControlsTimeout = setTimeout(() => {
+                        document.getElementById('control-overlay').classList.remove('show');
+                        document.getElementById('qr-overlay').classList.remove('show');
+                    }, 3000);
+                });
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case 'f':
+                        case 'F':
+                            toggleFullscreen();
+                            break;
+                        case 't':
+                        case 'T':
+                            toggleTheme();
+                            break;
+                        case 'Escape':
+                            if (document.fullscreenElement) {
+                                document.exitFullscreen();
+                            } else {
+                                returnToMain();
+                            }
+                            break;
+                        case ' ':
+                            e.preventDefault();
+                            this.generateLandscape();
+                            break;
+                    }
+                });
+            }
+
+            switchTheme() {
+                const themes = Object.keys(this.themes);
+                const currentIndex = themes.indexOf(this.currentTheme);
+                this.currentTheme = themes[(currentIndex + 1) % themes.length];
+                this.generateLandscape();
+            }
+        }
+
+        // Global functions for UI controls
+        function toggleTheme() {
+            if (window.visualizer) {
+                window.visualizer.switchTheme();
+            }
+        }
+
+        function toggleFullscreen() {
+            const container = document.getElementById('display-container');
+            
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().then(() => {
+                    container.classList.add('fullscreen');
+                }).catch(err => {
+                    console.log('Fullscreen not supported:', err);
+                });
+            } else {
+                document.exitFullscreen().then(() => {
+                    container.classList.remove('fullscreen');
+                });
+            }
+        }
+
+        function returnToMain() {
+            if (window.opener) {
+                window.close();
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            window.visualizer = new DisplayModeVisualizer();
+            
+            // Get theme from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const theme = urlParams.get('theme');
+            if (theme && window.visualizer.themes[theme]) {
+                window.visualizer.currentTheme = theme;
+                window.visualizer.generateLandscape();
+            }
+        });
+
+        // Prevent context menu
+        document.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
+</body>
+</html>
