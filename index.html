@@ -125,6 +125,59 @@
                     </div>
                 </div>
 
+                <!-- Selected Game Area - Shows current game with image and music context -->
+                <div class="selected-game-area" id="selected-game-area" style="display: none;">
+                    <div class="selected-game-content">
+                        <div class="game-display">
+                            <div class="game-image-container">
+                                <img id="selected-game-image" src="" alt="Game cover" class="game-cover">
+                                <div class="game-overlay">
+                                    <i class="fas fa-dice-d20"></i>
+                                </div>
+                            </div>
+                            <div class="game-info">
+                                <h3 id="selected-game-title">No game selected</h3>
+                                <p id="selected-game-description">Select a game to see soundtrack suggestions</p>
+                                <div class="game-meta">
+                                    <span id="selected-game-theme" class="theme-tag"></span>
+                                    <span id="selected-game-players" class="players-tag"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="music-context">
+                            <div class="current-song-display">
+                                <div class="song-image-container">
+                                    <img id="current-song-image" src="" alt="Movie poster" class="movie-poster">
+                                    <div class="play-indicator">
+                                        <i class="fas fa-music"></i>
+                                    </div>
+                                </div>
+                                <div class="song-info">
+                                    <h4 id="current-song-title">No song playing</h4>
+                                    <p id="current-song-movie">Select a soundtrack</p>
+                                    <div class="song-progress">
+                                        <div class="progress-bar-mini">
+                                            <div class="progress-fill-mini" id="mini-progress"></div>
+                                        </div>
+                                        <span class="time-mini" id="current-time-mini">0:00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="upcoming-queue">
+                                <h5><i class="fas fa-list"></i> Up Next</h5>
+                                <div class="queue-list" id="upcoming-songs">
+                                    <div class="queue-item placeholder">
+                                        <span class="queue-song">Select music to see queue</span>
+                                        <span class="queue-movie"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Enhanced Player Section - Now contextual, appears when music is selected -->
                 <div class="player-section" id="player-section" style="display: none;">
                     <div class="track-info">

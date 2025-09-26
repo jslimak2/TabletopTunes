@@ -2878,6 +2878,9 @@ class TabletopTunes {
             this.currentBoardGame = existingGame.name;
             this.matchingMode = 'boardgame';
             
+            // Show selected game area
+            this.showSelectedGameArea(existingGame);
+            
             // Display using the saved game data
             this.displayMyGameSuggestions(existingGame);
             
@@ -2896,10 +2899,9 @@ class TabletopTunes {
                 const officialName = bggGame.name || gameName;
                 this.currentBoardGame = officialName;
                 this.matchingMode = 'boardgame';
-                this.displayBGGGameSuggestions(bggGame);
                 
-                // Store game data temporarily for later saving when music is played
-                this.pendingGameData = {
+                // Create game data object for selected game area
+                const gameData = {
                     name: officialName,
                     source: 'boardgamegeek',
                     bggData: {
@@ -2914,9 +2916,18 @@ class TabletopTunes {
                         mechanisms: bggGame.mechanisms || [],
                         families: bggGame.families || [],
                         themes: bggGame.themes || [],
-                        detectedCategory: bggGame.category
+                        detectedCategory: bggGame.category,
+                        image: bggGame.image
                     }
                 };
+                
+                // Show selected game area
+                this.showSelectedGameArea(gameData);
+                
+                this.displayBGGGameSuggestions(bggGame);
+                
+                // Store game data temporarily for later saving when music is played
+                this.pendingGameData = gameData;
                 
                 this.showNotification(`Found "${officialName}" on BGG! Play a soundtrack to add it to My Games.`, 'info');
                 return bggGame;
@@ -2929,12 +2940,18 @@ class TabletopTunes {
         this.showNotification('Game not found on BGG, using theme analysis...', 'info');
         const themeResult = this.suggestByTheme(gameName);
         if (themeResult) {
-            // Store theme-based game data temporarily for later saving when music is played
-            this.pendingGameData = {
+            // Create game data object for selected game area
+            const gameData = {
                 name: gameName,
                 source: 'theme_analysis',
                 detectedCategory: themeResult.category 
             };
+            
+            // Show selected game area
+            this.showSelectedGameArea(gameData);
+            
+            // Store theme-based game data temporarily for later saving when music is played
+            this.pendingGameData = gameData;
         }
         
         return themeResult;
@@ -3970,11 +3987,15 @@ class TabletopTunes {
         // Save pending game data when music is actually played
         this.savePendingGameToCloset();
         
+        // Set playing state and track start time
+        this.isPlaying = true;
+        this.trackStartTime = Date.now();
+        
         // For demo purposes, just show notification
         // In production, this would play the actual track
         this.showNotification(`Now playing: ${trackName} from ${movieTitle}`, 'info');
         
-        // Update current track display
+        // Update current track display in player section
         const currentTrackElement = document.getElementById('current-track');
         const currentCategoryElement = document.getElementById('current-category');
         
@@ -3983,6 +4004,249 @@ class TabletopTunes {
         }
         if (currentCategoryElement) {
             currentCategoryElement.textContent = `From ${movieTitle}`;
+        }
+        
+        // Update selected game area with current song
+        this.updateCurrentSongDisplay(trackName, movieTitle);
+        
+        // Update upcoming queue (using current playlist)
+        this.updateUpcomingQueue(this.currentPlaylist, trackIndex);
+        
+        // Show player section if hidden
+        const playerSection = document.getElementById('player-section');
+        if (playerSection && playerSection.style.display === 'none') {
+            playerSection.style.display = 'block';
+        }
+        
+        // Add playing class for visual feedback
+        const selectedGameArea = document.getElementById('selected-game-area');
+        if (selectedGameArea) {
+            selectedGameArea.classList.add('playing');
+        }
+        
+        if (playerSection) {
+            playerSection.classList.add('playing');
+        }
+    }
+
+    // ===============================================
+    // 🎮 Selected Game Area Management
+    // ===============================================
+
+    /**
+     * Show and populate the selected game area
+     * @param {Object} gameData - Game data object
+     */
+    showSelectedGameArea(gameData) {
+        const selectedGameArea = document.getElementById('selected-game-area');
+        if (!selectedGameArea) return;
+
+        // Show the area
+        selectedGameArea.style.display = 'block';
+        
+        // Populate game information
+        this.populateGameDisplay(gameData);
+        
+        // Initialize music context (empty state)
+        this.resetMusicContext();
+        
+        // Add animation effect
+        selectedGameArea.classList.add('game-selected');
+        setTimeout(() => selectedGameArea.classList.remove('game-selected'), 500);
+        
+        // Trigger game selection visual effects
+        this.triggerGameSelectionEffect(gameData);
+    }
+
+    /**
+     * Populate the game display section
+     * @param {Object} gameData - Game data object
+     */
+    populateGameDisplay(gameData) {
+        const gameImage = document.getElementById('selected-game-image');
+        const gameTitle = document.getElementById('selected-game-title');
+        const gameDescription = document.getElementById('selected-game-description');
+        const gameTheme = document.getElementById('selected-game-theme');
+        const gamePlayers = document.getElementById('selected-game-players');
+
+        if (gameTitle) {
+            gameTitle.textContent = gameData.name || 'Unknown Game';
+        }
+
+        if (gameDescription) {
+            let description = 'Board game with curated soundtrack suggestions';
+            if (gameData.bggData?.description) {
+                // Truncate long descriptions
+                description = this.truncateText(gameData.bggData.description, 120);
+            } else if (gameData.detectedCategory) {
+                description = `${gameData.detectedCategory.charAt(0).toUpperCase() + gameData.detectedCategory.slice(1)} themed board game`;
+            }
+            gameDescription.textContent = description;
+        }
+
+        if (gameImage) {
+            // Use a placeholder game image - in production, this would come from BGG API
+            gameImage.src = gameData.bggData?.image || `https://via.placeholder.com/120x120/4ecdc4/ffffff?text=${encodeURIComponent(gameData.name?.charAt(0) || 'G')}`;
+            gameImage.alt = `${gameData.name || 'Game'} cover`;
+        }
+
+        if (gameTheme && gameData.detectedCategory) {
+            gameTheme.textContent = gameData.detectedCategory;
+            gameTheme.style.display = 'inline-block';
+        }
+
+        if (gamePlayers && gameData.bggData) {
+            const minPlayers = gameData.bggData.minPlayers;
+            const maxPlayers = gameData.bggData.maxPlayers;
+            if (minPlayers && maxPlayers) {
+                gamePlayers.textContent = minPlayers === maxPlayers ? `${minPlayers} players` : `${minPlayers}-${maxPlayers} players`;
+                gamePlayers.style.display = 'inline-block';
+            }
+        }
+    }
+
+    /**
+     * Update the current song display in the selected game area
+     * @param {string} songTitle - Song title
+     * @param {string} movieTitle - Movie title
+     * @param {Object} options - Additional options
+     */
+    updateCurrentSongDisplay(songTitle, movieTitle, options = {}) {
+        const songImage = document.getElementById('current-song-image');
+        const songTitleEl = document.getElementById('current-song-title');
+        const songMovie = document.getElementById('current-song-movie');
+        const currentSongDisplay = document.querySelector('.current-song-display');
+
+        if (songTitleEl) {
+            songTitleEl.textContent = songTitle || 'No song playing';
+        }
+
+        if (songMovie) {
+            songMovie.textContent = movieTitle || 'Select a soundtrack';
+        }
+
+        if (songImage) {
+            // Use a placeholder movie poster - in production, this would come from movie API
+            songImage.src = options.movieImage || `https://via.placeholder.com/80x120/6c5ce7/ffffff?text=${encodeURIComponent(movieTitle?.charAt(0) || 'M')}`;
+            songImage.alt = `${movieTitle || 'Movie'} poster`;
+        }
+
+        if (currentSongDisplay) {
+            if (songTitle && movieTitle) {
+                currentSongDisplay.classList.add('playing');
+            } else {
+                currentSongDisplay.classList.remove('playing');
+            }
+        }
+
+        // Show the selected game area if it's not visible
+        this.ensureSelectedGameAreaVisible();
+    }
+
+    /**
+     * Update the upcoming songs queue
+     * @param {Array} playlist - Array of upcoming songs
+     * @param {number} currentIndex - Current song index
+     */
+    updateUpcomingQueue(playlist = [], currentIndex = 0) {
+        const queueList = document.getElementById('upcoming-songs');
+        if (!queueList) return;
+
+        // Clear existing queue
+        queueList.innerHTML = '';
+
+        // Get next 3-5 songs
+        const upcomingSongs = playlist.slice(currentIndex + 1, currentIndex + 4);
+
+        if (upcomingSongs.length === 0) {
+            // Show placeholder
+            queueList.innerHTML = `
+                <div class="queue-item placeholder">
+                    <span class="queue-song">No upcoming songs</span>
+                    <span class="queue-movie"></span>
+                </div>
+            `;
+            return;
+        }
+
+        // Populate queue
+        upcomingSongs.forEach((song, index) => {
+            const queueItem = document.createElement('div');
+            queueItem.className = 'queue-item';
+            queueItem.innerHTML = `
+                <span class="queue-song">${song.name}</span>
+                <span class="queue-movie">${song.movie || 'Unknown'}</span>
+            `;
+            
+            // Add click handler to jump to song
+            queueItem.addEventListener('click', () => {
+                this.jumpToTrack(currentIndex + 1 + index);
+            });
+            
+            queueList.appendChild(queueItem);
+        });
+    }
+
+    /**
+     * Reset music context to empty state
+     */
+    resetMusicContext() {
+        this.updateCurrentSongDisplay('', '');
+        this.updateUpcomingQueue([]);
+        this.updateMiniProgress(0);
+    }
+
+    /**
+     * Update the mini progress bar
+     * @param {number} percentage - Progress percentage (0-100)
+     */
+    updateMiniProgress(percentage) {
+        const progressFill = document.getElementById('mini-progress');
+        const currentTime = document.getElementById('current-time-mini');
+        
+        if (progressFill) {
+            progressFill.style.width = `${percentage}%`;
+        }
+        
+        if (currentTime) {
+            // This would be updated with actual time in production
+            currentTime.textContent = '0:00';
+        }
+    }
+
+    /**
+     * Ensure the selected game area is visible
+     */
+    ensureSelectedGameAreaVisible() {
+        const selectedGameArea = document.getElementById('selected-game-area');
+        if (selectedGameArea && selectedGameArea.style.display === 'none') {
+            selectedGameArea.style.display = 'block';
+        }
+    }
+
+    /**
+     * Truncate text to specified length
+     * @param {string} text - Text to truncate
+     * @param {number} maxLength - Maximum length
+     * @returns {string} Truncated text
+     */
+    truncateText(text, maxLength) {
+        if (!text || text.length <= maxLength) return text;
+        return text.substring(0, maxLength).trim() + '...';
+    }
+
+    /**
+     * Jump to a specific track in the playlist
+     * @param {number} trackIndex - Track index to jump to
+     */
+    jumpToTrack(trackIndex) {
+        if (trackIndex >= 0 && trackIndex < this.currentPlaylist.length) {
+            this.currentTrackIndex = trackIndex;
+            const track = this.currentPlaylist[trackIndex];
+            if (track) {
+                this.playMovieTrack(track.movie, track.name, trackIndex);
+                this.updateUpcomingQueue(this.currentPlaylist, trackIndex);
+            }
         }
     }
 
@@ -4034,6 +4298,371 @@ class TabletopTunes {
         this.generateLandscape();
         this.initializeDiceContainer();
         this.initializeGamePieces();
+        
+        // Initialize dynamic feedback system
+        this.initializeDynamicFeedbackSystem();
+    }
+
+    // ===============================================
+    // 🎵 Dynamic Visual Feedback System
+    // ===============================================
+
+    /**
+     * Initialize the dynamic visual feedback system
+     */
+    initializeDynamicFeedbackSystem() {
+        // Initialize music-reactive elements
+        this.musicReactiveElements = [];
+        this.gameThemeColors = {
+            fantasy: { primary: '#8833ff', secondary: '#ff6b35', accent: '#00ff88' },
+            scifi: { primary: '#00bfff', secondary: '#ff1493', accent: '#32cd32' },
+            horror: { primary: '#ff0000', secondary: '#8b0000', accent: '#800080' },
+            ambient: { primary: '#4ecdc4', secondary: '#95e1d3', accent: '#fce38a' },
+            adventure: { primary: '#ff6b35', secondary: '#f7931e', accent: '#ffd700' },
+            tavern: { primary: '#8b4513', secondary: '#daa520', accent: '#ff8c00' }
+        };
+        
+        // Start the dynamic feedback loop
+        this.startDynamicFeedbackLoop();
+    }
+
+    /**
+     * Start the dynamic feedback animation loop
+     */
+    startDynamicFeedbackLoop() {
+        const animate = () => {
+            this.updateMusicReactiveVisualizations();
+            this.updateGameThemeVisualizations();
+            this.updateProgressAnimations();
+            requestAnimationFrame(animate);
+        };
+        animate();
+    }
+
+    /**
+     * Add music-reactive visualizations based on current playback
+     */
+    updateMusicReactiveVisualizations() {
+        if (!this.isPlaying || !this.currentPlaylist.length) return;
+
+        // Simulate audio analysis data (in production, this would come from Web Audio API)
+        const audioData = this.simulateAudioData();
+        
+        // Update landscape elements with music reactivity
+        this.updateMusicReactiveLandscape(audioData);
+        
+        // Update dice with beat-based rolling
+        this.updateMusicReactiveDice(audioData);
+        
+        // Update meeples with rhythm-based movement
+        this.updateMusicReactiveMeeples(audioData);
+        
+        // Update game pieces with color pulsing
+        this.updateMusicReactiveGamePieces(audioData);
+    }
+
+    /**
+     * Simulate audio analysis data for demo purposes
+     * In production, this would use Web Audio API
+     */
+    simulateAudioData() {
+        const time = Date.now() / 1000;
+        return {
+            volume: 0.3 + 0.7 * Math.sin(time * 2) * Math.sin(time * 0.7),
+            bass: 0.2 + 0.8 * Math.sin(time * 1.5),
+            mid: 0.3 + 0.7 * Math.sin(time * 2.2),
+            treble: 0.4 + 0.6 * Math.sin(time * 3.1),
+            beat: Math.sin(time * 2.5) > 0.8 ? 1 : 0
+        };
+    }
+
+    /**
+     * Update landscape elements to react to music
+     */
+    updateMusicReactiveLandscape(audioData) {
+        const canvas = document.getElementById('landscape-canvas');
+        if (!canvas) return;
+
+        const elements = canvas.querySelectorAll('div[style*="position: absolute"]');
+        elements.forEach((element, index) => {
+            const reactivity = (audioData.volume + audioData.mid) / 2;
+            const scale = 1 + reactivity * 0.3;
+            const rotation = audioData.treble * 10 * Math.sin(Date.now() / 1000 + index);
+            
+            element.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
+            
+            if (audioData.beat > 0) {
+                element.style.filter = `brightness(${1 + reactivity}) hue-rotate(${audioData.bass * 30}deg)`;
+            }
+        });
+    }
+
+    /**
+     * Update dice to react to music beats
+     */
+    updateMusicReactiveDice(audioData) {
+        const diceContainer = document.getElementById('dice-container');
+        if (!diceContainer) return;
+
+        const dice = diceContainer.querySelectorAll('.dice');
+        dice.forEach((die, index) => {
+            if (audioData.beat > 0) {
+                // Trigger a mini-roll on beat
+                const randomRotation = Math.random() * 360;
+                die.style.transform = `rotate(${randomRotation}deg) scale(${1 + audioData.volume * 0.2})`;
+                die.style.borderColor = this.getGameThemeColor('accent');
+            }
+            
+            // Subtle continuous animation
+            const pulse = 1 + audioData.mid * 0.1;
+            die.style.boxShadow = `0 0 ${audioData.bass * 20}px ${this.getGameThemeColor('primary')}`;
+        });
+    }
+
+    /**
+     * Update meeples to dance with the rhythm
+     */
+    updateMusicReactiveMeeples(audioData) {
+        const meepleStage = document.getElementById('meeple-stage');
+        if (!meepleStage) return;
+
+        const meeples = meepleStage.querySelectorAll('.meeple');
+        meeples.forEach((meeple, index) => {
+            const danceIntensity = audioData.volume + audioData.mid;
+            const bounceHeight = danceIntensity * 10;
+            const wiggle = Math.sin(Date.now() / 200 + index) * danceIntensity * 5;
+            
+            meeple.style.transform = `translateY(-${bounceHeight}px) rotate(${wiggle}deg)`;
+            
+            if (audioData.beat > 0) {
+                meeple.style.color = this.getGameThemeColor('secondary');
+                setTimeout(() => {
+                    meeple.style.color = this.getGameThemeColor('primary');
+                }, 100);
+            }
+        });
+    }
+
+    /**
+     * Update game pieces to pulse with music
+     */
+    updateMusicReactiveGamePieces(audioData) {
+        const gamePieces = document.querySelectorAll('.game-piece');
+        gamePieces.forEach((piece, index) => {
+            const pulseIntensity = (audioData.volume + audioData.treble) / 2;
+            const scale = 1 + pulseIntensity * 0.15;
+            const hueShift = audioData.bass * 60;
+            
+            piece.style.transform = `scale(${scale})`;
+            piece.style.filter = `saturate(${1 + pulseIntensity}) hue-rotate(${hueShift}deg)`;
+            
+            if (audioData.beat > 0) {
+                piece.style.borderColor = this.getGameThemeColor('accent');
+                piece.style.boxShadow = `0 0 15px ${this.getGameThemeColor('primary')}`;
+            }
+        });
+    }
+
+    /**
+     * Update game theme visualizations based on selected game
+     */
+    updateGameThemeVisualizations() {
+        if (!this.currentBoardGame || !this.pendingGameData) return;
+
+        const gameCategory = this.pendingGameData.detectedCategory || 'fantasy';
+        const themeColors = this.gameThemeColors[gameCategory];
+        
+        if (!themeColors) return;
+
+        // Update CSS custom properties for theme colors
+        document.documentElement.style.setProperty('--theme-primary', themeColors.primary);
+        document.documentElement.style.setProperty('--theme-secondary', themeColors.secondary);
+        document.documentElement.style.setProperty('--theme-accent', themeColors.accent);
+
+        // Update selected game area theme
+        this.updateSelectedGameAreaTheme(themeColors);
+        
+        // Update visualization elements theme
+        this.updateVisualizationTheme(gameCategory, themeColors);
+    }
+
+    /**
+     * Update selected game area with theme colors
+     */
+    updateSelectedGameAreaTheme(themeColors) {
+        const selectedGameArea = document.getElementById('selected-game-area');
+        if (!selectedGameArea) return;
+
+        // Add theme-based border glow
+        selectedGameArea.style.borderColor = themeColors.primary;
+        selectedGameArea.style.boxShadow = `0 0 20px ${themeColors.primary}33, var(--shadow-terminal)`;
+        
+        // Update theme tag color
+        const themeTag = document.getElementById('selected-game-theme');
+        if (themeTag) {
+            themeTag.style.background = `linear-gradient(135deg, ${themeColors.primary}, ${themeColors.secondary})`;
+        }
+    }
+
+    /**
+     * Update visualization elements with game theme
+     */
+    updateVisualizationTheme(gameCategory, themeColors) {
+        // Update landscape theme selector to match
+        const landscapeTheme = document.getElementById('landscape-theme');
+        if (landscapeTheme && landscapeTheme.value !== gameCategory) {
+            landscapeTheme.value = gameCategory;
+            // Regenerate landscape with new theme
+            setTimeout(() => this.generateLandscape(), 500);
+        }
+        
+        // Apply theme colors to visualization containers
+        const vizContainers = document.querySelectorAll('.viz-content');
+        vizContainers.forEach(container => {
+            container.style.borderColor = themeColors.primary + '33';
+        });
+    }
+
+    /**
+     * Update progress animations and indicators
+     */
+    updateProgressAnimations() {
+        // Update mini progress bar in selected game area
+        this.updateMiniProgressAnimation();
+        
+        // Update player section progress bar
+        this.updateMainProgressAnimation();
+        
+        // Update any other progress indicators
+        this.updateVisualizationProgress();
+    }
+
+    /**
+     * Update mini progress bar with smooth animation
+     */
+    updateMiniProgressAnimation() {
+        const progressFill = document.getElementById('mini-progress');
+        if (!progressFill || !this.isPlaying) return;
+
+        // Simulate progress (in production, this would be actual playback time)
+        const currentTime = Date.now();
+        const elapsed = (currentTime - (this.trackStartTime || currentTime)) / 1000;
+        const duration = 180; // 3 minutes average
+        const progress = Math.min((elapsed % duration) / duration * 100, 100);
+        
+        progressFill.style.width = `${progress}%`;
+        
+        // Add pulsing effect
+        const pulse = 1 + Math.sin(currentTime / 500) * 0.1;
+        progressFill.style.transform = `scaleY(${pulse})`;
+    }
+
+    /**
+     * Update main progress bar animation
+     */
+    updateMainProgressAnimation() {
+        const progressFill = document.getElementById('progress');
+        if (!progressFill || !this.isPlaying) return;
+
+        // Sync with mini progress
+        const miniProgress = document.getElementById('mini-progress');
+        if (miniProgress) {
+            progressFill.style.width = miniProgress.style.width;
+        }
+    }
+
+    /**
+     * Update visualization progress indicators
+     */
+    updateVisualizationProgress() {
+        // Add subtle animation to active visualization tab
+        const activeTab = document.querySelector('.viz-tab-btn.active');
+        if (activeTab && this.isPlaying) {
+            const pulse = 1 + Math.sin(Date.now() / 1000) * 0.05;
+            activeTab.style.transform = `scale(${pulse})`;
+            activeTab.style.borderColor = this.getGameThemeColor('primary');
+        }
+    }
+
+    /**
+     * Get current game theme color
+     */
+    getGameThemeColor(type = 'primary') {
+        if (!this.pendingGameData) return '#4ecdc4'; // Default color
+        
+        const gameCategory = this.pendingGameData.detectedCategory || 'fantasy';
+        const themeColors = this.gameThemeColors[gameCategory];
+        
+        return themeColors ? themeColors[type] : '#4ecdc4';
+    }
+
+    /**
+     * Trigger special effects for game selection
+     */
+    triggerGameSelectionEffect(gameData) {
+        const gameCategory = gameData.detectedCategory || 'fantasy';
+        
+        // Trigger landscape regeneration with theme
+        setTimeout(() => {
+            this.generateLandscape();
+        }, 300);
+        
+        // Add selection particle effect
+        this.createGameSelectionParticles(gameCategory);
+        
+        // Update all visualizations to match theme
+        this.updateGameThemeVisualizations();
+    }
+
+    /**
+     * Create particle effect for game selection
+     */
+    createGameSelectionParticles(gameCategory) {
+        const selectedGameArea = document.getElementById('selected-game-area');
+        if (!selectedGameArea) return;
+
+        const colors = this.gameThemeColors[gameCategory];
+        if (!colors) return;
+
+        // Create temporary particle container
+        const particleContainer = document.createElement('div');
+        particleContainer.className = 'selection-particles';
+        particleContainer.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        `;
+        
+        selectedGameArea.appendChild(particleContainer);
+
+        // Create particles
+        for (let i = 0; i < 12; i++) {
+            const particle = document.createElement('div');
+            particle.style.cssText = `
+                position: absolute;
+                width: 6px;
+                height: 6px;
+                background: ${colors.primary};
+                border-radius: 50%;
+                top: 50%;
+                left: 50%;
+                animation: particle-burst ${1 + Math.random() * 0.5}s ease-out forwards;
+                animation-delay: ${i * 50}ms;
+                transform: translate(-50%, -50%);
+            `;
+            particleContainer.appendChild(particle);
+        }
+
+        // Remove particles after animation
+        setTimeout(() => {
+            if (particleContainer.parentNode) {
+                particleContainer.parentNode.removeChild(particleContainer);
+            }
+        }, 2000);
     }
 
     switchVisualizationTab(vizType) {
@@ -4076,12 +4705,16 @@ class TabletopTunes {
 
         // Clear previous landscape
         canvas.innerHTML = '';
+        
+        // Add music-reactive class to canvas
+        canvas.classList.add('music-reactive');
 
         // Generate landscape based on theme
         const landscapes = this.getLandscapeElements(theme);
         
         landscapes.forEach((element, index) => {
             const div = document.createElement('div');
+            div.className = 'landscape-element music-reactive';
             div.style.cssText = `
                 position: absolute;
                 ${element.styles}
@@ -4151,6 +4784,7 @@ class TabletopTunes {
         meeples.forEach((meeple, index) => {
             setTimeout(() => {
                 const meepleDiv = document.createElement('div');
+                meepleDiv.className = 'meeple music-reactive';
                 meepleDiv.style.cssText = `
                     position: absolute;
                     font-size: 2rem;
@@ -4214,7 +4848,7 @@ class TabletopTunes {
         const sides = parseInt(diceType.substring(1));
         
         const dice = document.createElement('div');
-        dice.className = 'dice';
+        dice.className = 'dice music-reactive';
         dice.dataset.sides = sides;
         dice.textContent = Math.floor(Math.random() * sides) + 1;
         dice.addEventListener('click', () => {
@@ -4247,7 +4881,7 @@ class TabletopTunes {
         ['d6', 'd20', 'd12'].forEach(diceType => {
             const sides = parseInt(diceType.substring(1));
             const dice = document.createElement('div');
-            dice.className = 'dice';
+            dice.className = 'dice music-reactive';
             dice.dataset.sides = sides;
             dice.textContent = Math.floor(Math.random() * sides) + 1;
             dice.addEventListener('click', () => this.rollSingleDice(dice));
@@ -4286,7 +4920,7 @@ class TabletopTunes {
 
         pieces.forEach((piece, index) => {
             const pieceDiv = document.createElement('div');
-            pieceDiv.className = 'game-piece';
+            pieceDiv.className = 'game-piece music-reactive';
             pieceDiv.innerHTML = piece;
             pieceDiv.style.animationDelay = `${index * 0.1}s`;
             pieceDiv.addEventListener('click', () => {
