@@ -1258,6 +1258,10 @@ class TabletopTunes {
         this.pause();
         this.displayPlaylist();
         this.updateCurrentTrackInfo();
+        
+        // Hide player section when playlist is cleared
+        this.hidePlayerSection();
+        
         const playlistTitle = document.querySelector('.playlist-section h3');
         if (playlistTitle) playlistTitle.textContent = 'Current Playlist';
         this.showNotification('Playlist cleared');
@@ -1340,6 +1344,9 @@ class TabletopTunes {
         
         this.displayPlaylist();
         this.updateCurrentTrackInfo();
+        
+        // Show player section when music is selected
+        this.showPlayerSection();
         
         // Show appropriate notification based on context
         const categoryName = this.getCurrentCategoryName();
@@ -2513,6 +2520,38 @@ class TabletopTunes {
     updateDisplay() {
         this.updateCurrentTrackInfo();
         this.displayPlaylist();
+    }
+    
+    // Show the player section when music is selected
+    showPlayerSection() {
+        const playerSection = document.getElementById('player-section');
+        if (playerSection) {
+            playerSection.style.display = 'block';
+            // Add a smooth slide-in animation
+            playerSection.style.opacity = '0';
+            playerSection.style.transform = 'translateY(20px)';
+            
+            // Trigger animation
+            setTimeout(() => {
+                playerSection.style.transition = 'all 0.3s ease-out';
+                playerSection.style.opacity = '1';
+                playerSection.style.transform = 'translateY(0)';
+            }, 50);
+        }
+    }
+    
+    // Hide the player section when no music is selected
+    hidePlayerSection() {
+        const playerSection = document.getElementById('player-section');
+        if (playerSection) {
+            playerSection.style.transition = 'all 0.3s ease-out';
+            playerSection.style.opacity = '0';
+            playerSection.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                playerSection.style.display = 'none';
+            }, 300);
+        }
     }
     
     showNotification(message, type = 'default') {
