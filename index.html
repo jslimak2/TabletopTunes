@@ -682,10 +682,10 @@
         </div>
     </div>
     
-    <script src="script.js"></script>
+    <script src="script.js?v=20241228"></script>
     <script>
-        // Register Service Worker for PWA functionality
-        if ('serviceWorker' in navigator) {
+        // Register Service Worker for PWA functionality - DISABLED FOR DEVELOPMENT
+        if (false && 'serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Only register service worker for http/https protocols
                 if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
