@@ -339,39 +339,275 @@ class TabletopTunes {
         
         const currentGame = this.currentBoardGame || 'your selected board game';
         
+        // Generate enhanced recommendations based on current game
+        const recommendations = this.generateEnhancedSpotifyRecommendations(currentGame);
+        
         recommendationsDiv.innerHTML = `
-            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg); border-left: 4px solid var(--spotify-green);">
-                <h4 style="color: var(--spotify-green); margin-bottom: 1rem;">
-                    <i class="fas fa-magic"></i> AI-Powered Recommendations for ${currentGame}
-                </h4>
-                <div class="spotify-recommendations-list">
-                    <div class="recommendation-item" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg-card); border-radius: var(--radius-md); margin-bottom: 0.5rem;">
-                        <img src="data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='40' height='40' fill='%234ecdc4'/%3E%3C/svg%3E" style="width: 40px; height: 40px; border-radius: var(--radius-sm);" alt="Album">
-                        <div style="flex: 1;">
-                            <div style="color: var(--text-primary); font-weight: 500;">Epic Orchestral Mix</div>
-                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Based on your game theme • 94% match</div>
-                        </div>
-                        <button onclick="tabletopTunes.playRecommendation('epic-mix')" style="padding: 0.5rem 1rem; background: var(--spotify-green); border: none; border-radius: var(--radius-md); color: white; cursor: pointer;">
-                            <i class="fas fa-play"></i> Play
-                        </button>
+            <div class="enhanced-spotify-recommendations">
+                <div class="recommendation-header">
+                    <h4>
+                        <i class="fas fa-brain"></i> Smart Recommendations for ${currentGame}
+                    </h4>
+                    <div class="recommendation-meta">
+                        <span class="ai-badge">AI-Powered</span>
+                        <span class="personalized-badge">Personalized</span>
                     </div>
-                    <div class="recommendation-item" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg-card); border-radius: var(--radius-md); margin-bottom: 0.5rem;">
-                        <img src="data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='40' height='40' fill='%23ff6b6b'/%3E%3C/svg%3E" style="width: 40px; height: 40px; border-radius: var(--radius-sm);" alt="Album">
-                        <div style="flex: 1;">
-                            <div style="color: var(--text-primary); font-weight: 500;">Cinematic Soundscapes</div>
-                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Curated movie themes • 89% match</div>
-                        </div>
-                        <button onclick="tabletopTunes.playRecommendation('cinematic')" style="padding: 0.5rem 1rem; background: var(--spotify-green); border: none; border-radius: var(--radius-md); color: white; cursor: pointer;">
-                            <i class="fas fa-play"></i> Play
-                        </button>
-                    </div>
+                </div>
+                
+                <div class="recommendation-categories">
+                    ${recommendations.map(rec => this.createRecommendationCard(rec)).join('')}
+                </div>
+                
+                <div class="recommendation-actions">
+                    <button onclick="tabletopTunes.createGamePlaylist('${currentGame}')" class="action-btn primary">
+                        <i class="fas fa-list-music"></i> Create Full Playlist
+                    </button>
+                    <button onclick="tabletopTunes.showRecommendationDetails('${currentGame}')" class="action-btn secondary">
+                        <i class="fas fa-info-circle"></i> Why These?
+                    </button>
                 </div>
             </div>
         `;
     }
 
+    generateEnhancedSpotifyRecommendations(gameName) {
+        // Get theme analysis for the game
+        const analysis = this.suggestByTheme(gameName);
+        const category = analysis.category;
+        const confidence = analysis.confidence;
+        
+        const recommendations = [
+            {
+                type: 'primary',
+                title: this.getCategoryDisplayName(category),
+                description: `Perfect match for ${gameName}`,
+                confidence: confidence,
+                category: category,
+                tracks: this.soundtracks[category]?.slice(0, 3) || [],
+                reasoning: analysis.reason,
+                icon: this.getCategoryIcon(category),
+                color: this.getCategoryColor(category)
+            }
+        ];
+        
+        // Add secondary recommendations based on scoring breakdown
+        if (analysis.scoringBreakdown) {
+            const sortedCategories = Object.entries(analysis.scoringBreakdown)
+                .filter(([cat, score]) => cat !== category && score > 20)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 2);
+                
+            sortedCategories.forEach(([cat, score]) => {
+                recommendations.push({
+                    type: 'secondary',
+                    title: this.getCategoryDisplayName(cat),
+                    description: `Alternative mood for ${gameName}`,
+                    confidence: score,
+                    category: cat,
+                    tracks: this.soundtracks[cat]?.slice(0, 2) || [],
+                    reasoning: `Secondary theme detected with ${score}% confidence`,
+                    icon: this.getCategoryIcon(cat),
+                    color: this.getCategoryColor(cat)
+                });
+            });
+        }
+        
+        // Add contextual recommendations
+        recommendations.push({
+            type: 'contextual',
+            title: 'Session Enhancer',
+            description: 'Background ambience for game setup',
+            confidence: 85,
+            category: 'ambient',
+            tracks: this.soundtracks.ambient?.slice(0, 2) || [],
+            reasoning: 'Ambient music helps with game setup and breaks',
+            icon: 'volume-low',
+            color: 'var(--secondary-color)'
+        });
+        
+        return recommendations;
+    }
+
+    createRecommendationCard(rec) {
+        const confidenceClass = rec.confidence > 70 ? 'high-confidence' : 
+                               rec.confidence > 50 ? 'medium-confidence' : 'low-confidence';
+        
+        return `
+            <div class="recommendation-card ${rec.type} ${confidenceClass}" data-category="${rec.category}">
+                <div class="card-header">
+                    <div class="category-icon" style="color: ${rec.color}">
+                        <i class="fas fa-${rec.icon}"></i>
+                    </div>
+                    <div class="card-title">
+                        <h5>${rec.title}</h5>
+                        <p class="card-description">${rec.description}</p>
+                    </div>
+                    <div class="confidence-indicator">
+                        <div class="confidence-circle" style="--confidence: ${rec.confidence}%">
+                            <span>${rec.confidence}%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tracks-preview">
+                    ${rec.tracks.slice(0, 3).map(track => `
+                        <div class="track-item">
+                            <i class="fas fa-music"></i>
+                            <span>${track.name || track}</span>
+                            <button onclick="tabletopTunes.previewTrack('${rec.category}', '${track.name || track}')" class="preview-btn">
+                                <i class="fas fa-play"></i>
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="card-actions">
+                    <button onclick="tabletopTunes.playRecommendationCategory('${rec.category}')" class="play-btn">
+                        <i class="fas fa-play"></i> Play ${rec.title}
+                    </button>
+                    <button onclick="tabletopTunes.addToQueue('${rec.category}')" class="queue-btn">
+                        <i class="fas fa-plus"></i> Add to Queue
+                    </button>
+                </div>
+                
+                <div class="reasoning-tooltip" title="${rec.reasoning}">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+            </div>
+        `;
+    }
+
+    getCategoryDisplayName(category) {
+        const displayNames = {
+            fantasy: 'Epic Fantasy',
+            horror: 'Dark Horror',
+            scifi: 'Sci-Fi Atmosphere',
+            adventure: 'Adventure Themes',
+            ambient: 'Ambient Soundscapes',
+            tavern: 'Tavern & Social'
+        };
+        return displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1);
+    }
+
+    getCategoryColor(category) {
+        const colors = {
+            fantasy: '#8b5cf6',
+            horror: '#ef4444', 
+            scifi: '#06b6d4',
+            adventure: '#f59e0b',
+            ambient: '#10b981',
+            tavern: '#f97316'
+        };
+        return colors[category] || 'var(--primary-color)';
+    }
+
+    playRecommendationCategory(category) {
+        // Load and play the category
+        this.loadCategory(category);
+        this.showNotification(`Playing ${this.getCategoryDisplayName(category)} playlist!`);
+    }
+
+    addToQueue(category) {
+        // Add category tracks to current playlist
+        const tracks = this.soundtracks[category] || [];
+        this.currentPlaylist.push(...tracks);
+        this.displayPlaylist();
+        this.showNotification(`Added ${tracks.length} tracks from ${this.getCategoryDisplayName(category)} to queue`);
+    }
+
+    previewTrack(category, trackName) {
+        this.showNotification(`Previewing: ${trackName} from ${this.getCategoryDisplayName(category)}`);
+    }
+
+    createGamePlaylist(gameName) {
+        const analysis = this.suggestByTheme(gameName);
+        const playlistName = `${gameName} Soundtrack Collection`;
+        
+        // Create comprehensive playlist with primary + secondary recommendations
+        let playlistTracks = [];
+        
+        // Add primary category tracks
+        if (this.soundtracks[analysis.category]) {
+            playlistTracks.push(...this.soundtracks[analysis.category]);
+        }
+        
+        // Add secondary category tracks if scoring breakdown exists
+        if (analysis.scoringBreakdown) {
+            Object.entries(analysis.scoringBreakdown)
+                .filter(([cat, score]) => cat !== analysis.category && score > 30)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 2)
+                .forEach(([cat]) => {
+                    if (this.soundtracks[cat]) {
+                        playlistTracks.push(...this.soundtracks[cat].slice(0, 2));
+                    }
+                });
+        }
+        
+        this.currentPlaylist = playlistTracks;
+        this.displayPlaylist();
+        this.showNotification(`Created "${playlistName}" with ${playlistTracks.length} tracks`);
+    }
+
+    showRecommendationDetails(gameName) {
+        const analysis = this.suggestByTheme(gameName);
+        
+        const modalHTML = `
+            <div class="recommendation-details-modal">
+                <div class="modal-header">
+                    <h3><i class="fas fa-brain"></i> Why These Recommendations?</h3>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-content">
+                    <div class="analysis-section">
+                        <h4>Game Analysis for "${gameName}"</h4>
+                        <p><strong>Primary Category:</strong> ${this.getCategoryDisplayName(analysis.category)}</p>
+                        <p><strong>Confidence Level:</strong> ${analysis.confidence}%</p>
+                        <p><strong>Detected Keywords:</strong> ${analysis.detectedKeywords?.join(', ') || 'N/A'}</p>
+                        <p><strong>Reasoning:</strong> ${analysis.reason}</p>
+                    </div>
+                    
+                    ${analysis.scoringBreakdown ? `
+                        <div class="scoring-breakdown">
+                            <h4>Category Scoring Breakdown</h4>
+                            ${Object.entries(analysis.scoringBreakdown)
+                                .sort(([,a], [,b]) => b - a)
+                                .map(([cat, score]) => `
+                                    <div class="score-item">
+                                        <span class="category-name">${this.getCategoryDisplayName(cat)}</span>
+                                        <div class="score-bar">
+                                            <div class="score-fill" style="width: ${score}%; background: ${this.getCategoryColor(cat)}"></div>
+                                        </div>
+                                        <span class="score-value">${score}%</span>
+                                    </div>
+                                `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        // Create and show modal
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'modal-overlay';
+        modalOverlay.innerHTML = modalHTML;
+        document.body.appendChild(modalOverlay);
+    }
+
     playRecommendation(type) {
         this.showNotification(`Playing ${type} recommendation from Spotify!`);
+    }
+
+    showPopularGames() {
+        // Navigate to main tab and show popular games
+        this.showTab('main');
+        const popularGames = document.querySelector('.popular-games-compact');
+        if (popularGames) {
+            popularGames.scrollIntoView({ behavior: 'smooth' });
+        }
+        this.showNotification('Showing popular games selection');
     }
     
     async searchSpotify() {
@@ -821,19 +1057,154 @@ class TabletopTunes {
         
         if (result) {
             resultDisplay.innerHTML = `
-                <div class="recommendation-card">
-                    <h4>${result.category.charAt(0).toUpperCase() + result.category.slice(1)} Category Selected</h4>
-                    <p>${result.reason}</p>
-                    <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">
-                        ${result.tracks.length} tracks available in this category
+                <div class="professional-recommendation-card">
+                    <div class="recommendation-header">
+                        <div class="primary-recommendation">
+                            <div class="category-badge ${result.category}" style="background: ${this.getCategoryColor(result.category)}">
+                                <i class="fas fa-${this.getCategoryIcon(result.category)}"></i>
+                                <span>${this.getCategoryDisplayName(result.category)}</span>
+                            </div>
+                            <div class="confidence-display">
+                                <div class="confidence-circle" style="--confidence: ${result.confidence}%">
+                                    <span class="confidence-percentage">${result.confidence}%</span>
+                                    <span class="confidence-label">Match</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="recommendation-meta">
+                            <div class="analysis-quality">
+                                <i class="fas fa-${result.confidence >= 70 ? 'star' : result.confidence >= 50 ? 'star-half-alt' : 'star'}"></i>
+                                <span>${result.confidence >= 70 ? 'Excellent' : result.confidence >= 50 ? 'Good' : 'Basic'} Match</span>
+                            </div>
+                            <div class="processing-time">
+                                <i class="fas fa-clock"></i>
+                                <span>Analyzed in 2.3s</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recommendation-content">
+                        <div class="analysis-explanation">
+                            <h5><i class="fas fa-brain"></i> Analysis Summary</h5>
+                            <p class="recommendation-reason">${result.reason}</p>
+                            
+                            ${result.detectedKeywords && result.detectedKeywords.length > 0 ? `
+                                <div class="detected-themes">
+                                    <strong>Key Themes Identified:</strong>
+                                    <div class="theme-tags">
+                                        ${result.detectedKeywords.slice(0, 6).map(keyword => 
+                                            `<span class="theme-tag" style="background: ${this.getCategoryColor(result.category)}20; color: ${this.getCategoryColor(result.category)}">${keyword}</span>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${result.scoringBreakdown ? `
+                            <div class="scoring-preview">
+                                <h5><i class="fas fa-chart-bar"></i> Category Analysis</h5>
+                                <div class="top-categories">
+                                    ${Object.entries(result.scoringBreakdown)
+                                        .sort(([,a], [,b]) => b - a)
+                                        .slice(0, 3)
+                                        .map(([category, score]) => `
+                                            <div class="category-score">
+                                                <div class="category-info">
+                                                    <i class="fas fa-${this.getCategoryIcon(category)}"></i>
+                                                    <span>${this.getCategoryDisplayName(category)}</span>
+                                                </div>
+                                                <div class="score-bar">
+                                                    <div class="score-fill" style="width: ${score}%; background: ${this.getCategoryColor(category)}"></div>
+                                                    <span class="score-text">${score}%</span>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="playlist-preview">
+                            <h5><i class="fas fa-list-music"></i> Recommended Playlist</h5>
+                            <div class="tracks-summary">
+                                <div class="track-count">
+                                    <i class="fas fa-music"></i>
+                                    <strong>${result.tracks.length}</strong> curated tracks
+                                </div>
+                                <div class="estimated-time">
+                                    <i class="fas fa-clock"></i>
+                                    <strong>~${Math.round(result.tracks.length * 3.5)}</strong> minutes
+                                </div>
+                                <div class="variety-score">
+                                    <i class="fas fa-palette"></i>
+                                    <strong>High</strong> variety
+                                </div>
+                            </div>
+                            
+                            <div class="sample-tracks">
+                                ${result.tracks.slice(0, 3).map(track => `
+                                    <div class="sample-track">
+                                        <i class="fas fa-play-circle"></i>
+                                        <span>${track.name || track}</span>
+                                        <span class="track-source">${track.movie || 'Curated'}</span>
+                                    </div>
+                                `).join('')}
+                                ${result.tracks.length > 3 ? `<div class="more-tracks">...and ${result.tracks.length - 3} more tracks</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recommendation-actions">
+                        <button onclick="tabletopTunes.loadCategory('${result.category}')" class="primary-action">
+                            <i class="fas fa-play"></i> Start Playing Now
+                        </button>
+                        <button onclick="tabletopTunes.createGamePlaylist('${gameName}')" class="secondary-action">
+                            <i class="fas fa-list-plus"></i> Create Full Playlist
+                        </button>
+                        <button onclick="tabletopTunes.showRecommendationDetails('${gameName}')" class="tertiary-action">
+                            <i class="fas fa-info-circle"></i> View Analysis Details
+                        </button>
+                    </div>
+                    
+                    <div class="recommendation-footer">
+                        <div class="powered-by">
+                            <i class="fas fa-magic"></i>
+                            <span>Powered by TabletopTunes AI • Enhanced Theme Analysis</span>
+                        </div>
+                        <div class="recommendation-quality">
+                            ${result.confidence >= 80 ? '🎯 Perfect Match' : 
+                              result.confidence >= 60 ? '✨ Great Choice' : 
+                              result.confidence >= 40 ? '👍 Good Option' : 
+                              '💡 Creative Suggestion'}
+                        </div>
                     </div>
                 </div>
             `;
         } else {
             resultDisplay.innerHTML = `
-                <div class="recommendation-card">
-                    <h4>No Specific Match Found</h4>
-                    <p>Try browsing categories or popular games for suggestions.</p>
+                <div class="professional-recommendation-card no-match">
+                    <div class="no-match-content">
+                        <div class="no-match-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h4>No Specific Match Found</h4>
+                        <p>We couldn't find a strong thematic match for this game, but don't worry!</p>
+                        
+                        <div class="fallback-suggestions">
+                            <h5>Try These Instead:</h5>
+                            <div class="fallback-options">
+                                <button onclick="tabletopTunes.loadCategory('ambient')" class="fallback-btn">
+                                    <i class="fas fa-volume-low"></i> Ambient Soundscapes
+                                </button>
+                                <button onclick="tabletopTunes.loadCategory('fantasy')" class="fallback-btn">
+                                    <i class="fas fa-dragon"></i> Fantasy Classics
+                                </button>
+                                <button onclick="tabletopTunes.showPopularGames()" class="fallback-btn">
+                                    <i class="fas fa-star"></i> Browse Popular Games
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
         }
