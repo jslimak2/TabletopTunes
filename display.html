@@ -292,6 +292,10 @@
                 this.analyser = null;
                 this.dataArray = null;
                 this.animationFrame = null;
+                this.animationsPaused = false;
+                this.energyMode = 'normal';
+                this.musicSensitivity = 1.0;
+                this.externalAudioData = null;
                 
                 this.init();
             }
@@ -414,6 +418,11 @@
             }
 
             getAudioData() {
+                // Use external audio data if available (from main window)
+                if (this.externalAudioData) {
+                    return this.externalAudioData;
+                }
+
                 if (this.useSimulation) {
                     return this.simulateAudioData();
                 }
@@ -427,10 +436,10 @@
                     const treble = this.dataArray.slice(50).reduce((a, b) => a + b) / (this.dataArray.length - 50);
                     
                     return {
-                        volume: average / 255,
-                        bass: bass / 255,
-                        mid: mid / 255,
-                        treble: treble / 255,
+                        volume: (average / 255) * this.musicSensitivity,
+                        bass: (bass / 255) * this.musicSensitivity,
+                        mid: (mid / 255) * this.musicSensitivity,
+                        treble: (treble / 255) * this.musicSensitivity,
                         beat: average > 150 ? 1 : 0
                     };
                 }
@@ -495,6 +504,48 @@
                 this.currentTheme = themes[(currentIndex + 1) % themes.length];
                 this.generateLandscape();
             }
+
+            pauseAnimations() {
+                this.animationsPaused = true;
+                const elements = document.querySelectorAll('.landscape-element');
+                elements.forEach(element => {
+                    element.style.animationPlayState = 'paused';
+                });
+            }
+
+            resumeAnimations() {
+                this.animationsPaused = false;
+                const elements = document.querySelectorAll('.landscape-element');
+                elements.forEach(element => {
+                    element.style.animationPlayState = 'running';
+                });
+            }
+
+            setEnergyMode(mode) {
+                this.energyMode = mode;
+                const elements = document.querySelectorAll('.landscape-element');
+                
+                if (mode === 'high') {
+                    elements.forEach(element => {
+                        const currentDuration = parseFloat(element.style.animationDuration) || 3;
+                        element.style.animationDuration = (currentDuration * 0.5) + 's';
+                    });
+                } else if (mode === 'low') {
+                    elements.forEach(element => {
+                        const currentDuration = parseFloat(element.style.animationDuration) || 3;
+                        element.style.animationDuration = (currentDuration * 2) + 's';
+                    });
+                }
+            }
+
+            setMusicSensitivity(value) {
+                this.musicSensitivity = Math.max(0.1, Math.min(2.0, value));
+            }
+
+            handleExternalAudioData(audioData) {
+                // Use external audio data if available
+                this.externalAudioData = audioData;
+            }
         }
 
         // Global functions for UI controls
@@ -540,6 +591,52 @@
                 window.visualizer.generateLandscape();
             }
         });
+
+        // Listen for remote control commands
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'remoteCommand') {
+                handleRemoteCommand(event.data.command, event.data.data);
+            } else if (event.data.type === 'audioData') {
+                // Handle audio data from main window
+                if (window.visualizer) {
+                    window.visualizer.handleExternalAudioData(event.data.data);
+                }
+            }
+        });
+
+        function handleRemoteCommand(command, data) {
+            if (!window.visualizer) return;
+
+            switch(command) {
+                case 'changeTheme':
+                    if (data.theme && window.visualizer.themes[data.theme]) {
+                        window.visualizer.currentTheme = data.theme;
+                        window.visualizer.generateLandscape();
+                    }
+                    break;
+                case 'newScene':
+                    window.visualizer.generateLandscape();
+                    break;
+                case 'fullscreen':
+                    toggleFullscreen();
+                    break;
+                case 'pause':
+                    window.visualizer.pauseAnimations();
+                    break;
+                case 'resume':
+                    window.visualizer.resumeAnimations();
+                    break;
+                case 'partyMode':
+                    window.visualizer.setEnergyMode('high');
+                    break;
+                case 'ambientMode':
+                    window.visualizer.setEnergyMode('low');
+                    break;
+                case 'setSensitivity':
+                    window.visualizer.setMusicSensitivity(data.value / 100);
+                    break;
+            }
+        }
 
         // Prevent context menu
         document.addEventListener('contextmenu', e => e.preventDefault());

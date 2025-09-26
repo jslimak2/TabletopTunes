@@ -5201,7 +5201,16 @@ class TabletopTunes {
         const displayUrl = `display.html?theme=${currentTheme}&game=${encodeURIComponent(currentGame)}`;
         
         // Open display mode in new tab
-        window.open(displayUrl, '_blank');
+        const displayWindow = window.open(displayUrl, '_blank');
+        
+        // Also offer remote control
+        setTimeout(() => {
+            const remoteUrl = `remote-control.html?theme=${currentTheme}&game=${encodeURIComponent(currentGame)}`;
+            const useRemote = confirm('Display mode opened! Would you like to open the mobile remote control as well?');
+            if (useRemote) {
+                window.open(remoteUrl, '_blank');
+            }
+        }, 1000);
         
         this.showNotification('Display mode opened in new tab! Drag to TV browser or use fullscreen (F key).', 'success');
     }
