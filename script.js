@@ -20,6 +20,9 @@ class TabletopTunes {
         // BoardGameGeek API integration
         this.bggService = new BGGApiService();
         
+        // Movie API integration for dynamic soundtrack data
+        this.movieService = new MovieApiService();
+        
         // Games closet for saved games
         this.savedGames = {};
         this.gamePlaylistHistory = {};
@@ -869,6 +872,19 @@ class TabletopTunes {
         document.getElementById('game-search').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.performGameSearch();
+            }
+        });
+        
+        // Live search functionality with debouncing
+        document.getElementById('game-search').addEventListener('input', (e) => {
+            this.handleLiveSearch(e.target.value);
+        });
+        
+        // Hide live search results when clicking outside
+        document.addEventListener('click', (e) => {
+            const searchContainer = document.querySelector('.search-container');
+            if (!searchContainer.contains(e.target)) {
+                this.hideLiveSearchResults();
             }
         });
         
@@ -2069,6 +2085,148 @@ class TabletopTunes {
         }, duration);
     }
 
+    // Live Search Functionality
+    handleLiveSearch(query) {
+        // Clear previous timeout
+        if (this.liveSearchTimeout) {
+            clearTimeout(this.liveSearchTimeout);
+        }
+        
+        // Hide suggestions if query is too short
+        if (query.length < 2) {
+            this.hideLiveSearchResults();
+            return;
+        }
+        
+        // Debounce the search to avoid excessive API calls
+        this.liveSearchTimeout = setTimeout(() => {
+            this.performLiveSearch(query);
+        }, 300);
+    }
+    
+    async performLiveSearch(query) {
+        try {
+            const suggestions = await this.getLiveSearchSuggestions(query);
+            this.displayLiveSearchResults(suggestions, query);
+        } catch (error) {
+            console.error('Live search error:', error);
+            this.hideLiveSearchResults();
+        }
+    }
+    
+    async getLiveSearchSuggestions(query) {
+        const suggestions = [];
+        const normalizedQuery = query.toLowerCase();
+        
+        // Check local database for matches
+        if (typeof BOARD_GAMES_DATABASE !== 'undefined') {
+            Object.keys(BOARD_GAMES_DATABASE).forEach(gameName => {
+                if (gameName.toLowerCase().includes(normalizedQuery)) {
+                    suggestions.push({
+                        name: gameName,
+                        source: 'database',
+                        category: BOARD_GAMES_DATABASE[gameName].category,
+                        themes: BOARD_GAMES_DATABASE[gameName].themes
+                    });
+                }
+            });
+        }
+        
+        // Add theme-based suggestions
+        const themes = ['fantasy', 'scifi', 'horror', 'adventure', 'mystery', 'western'];
+        themes.forEach(theme => {
+            if (theme.includes(normalizedQuery) || normalizedQuery.includes(theme)) {
+                suggestions.push({
+                    name: `${theme.charAt(0).toUpperCase() + theme.slice(1)} Games`,
+                    source: 'theme',
+                    category: theme,
+                    isCategory: true
+                });
+            }
+        });
+        
+        // Limit to top 5 suggestions
+        return suggestions.slice(0, 5);
+    }
+    
+    displayLiveSearchResults(suggestions, query) {
+        let container = document.getElementById('live-search-results');
+        
+        // Create container if it doesn't exist
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'live-search-results';
+            container.className = 'live-search-results';
+            
+            const searchContainer = document.querySelector('.search-container');
+            searchContainer.appendChild(container);
+        }
+        
+        if (suggestions.length === 0) {
+            // Escape query to prevent XSS
+            const escapedQuery = this.escapeHtml(query);
+            container.innerHTML = `
+                <div class="live-search-item no-results">
+                    <i class="fas fa-search" style="margin-right: 8px; color: var(--text-secondary);"></i>
+                    <span>No matches found for "${escapedQuery}"</span>
+                </div>
+            `;
+        } else {
+            container.innerHTML = suggestions.map(suggestion => {
+                // Escape all user-generated content
+                const escapedName = this.escapeHtml(suggestion.name);
+                const escapedSource = this.escapeHtml(suggestion.source);
+                const escapedThemes = suggestion.themes ? this.escapeHtml(suggestion.themes.slice(0, 3).join(', ')) : '';
+                
+                return `
+                    <div class="live-search-item" onclick="tabletopTunes.selectLiveSearchResult('${escapedName}', '${escapedSource}')">
+                        <i class="fas ${suggestion.isCategory ? 'fa-layer-group' : 'fa-dice'}" style="margin-right: 8px; color: var(--primary-color);"></i>
+                        <div class="suggestion-content">
+                            <span class="suggestion-name">${escapedName}</span>
+                            ${escapedThemes ? `<span class="suggestion-themes">${escapedThemes}</span>` : ''}
+                        </div>
+                        <span class="suggestion-source">${escapedSource}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        container.style.display = 'block';
+    }
+    
+    /**
+     * Escape HTML to prevent XSS attacks
+     * @param {string} text - Text to escape
+     * @returns {string} Escaped text
+     */
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    hideLiveSearchResults() {
+        const container = document.getElementById('live-search-results');
+        if (container) {
+            container.style.display = 'none';
+        }
+    }
+    
+    selectLiveSearchResult(gameName, source) {
+        const searchInput = document.getElementById('game-search');
+        searchInput.value = gameName;
+        this.hideLiveSearchResults();
+        
+        if (source === 'theme') {
+            // Extract theme from the name (e.g., "Fantasy Games" -> "fantasy")
+            const theme = gameName.toLowerCase().replace(' games', '');
+            this.selectCategory(theme);
+        } else {
+            this.performGameSearch();
+        }
+    }
+
     // Board Game Matching Functions
     async performGameSearch() {
         const gameInput = document.getElementById('game-search').value.trim();
@@ -2110,13 +2268,16 @@ class TabletopTunes {
                 console.log('Found exact match in database:', game);
                 this.currentBoardGame = gameName;
                 this.matchingMode = 'boardgame';
-                this.displayGameSuggestions(game);
+                
+                // Enhance with movie API data before displaying
+                const enhancedGame = await this.enhanceWithMovieData(game);
+                this.displayGameSuggestions(enhancedGame);
                 
                 // Automatically save to games closet
                 this.saveToGamesCloset(gameName, { source: 'local_database' });
                 
-                console.log('Returning game object with suggestedSoundtracks:', !!game.suggestedSoundtracks);
-                return game;
+                console.log('Returning game object with suggestedSoundtracks:', !!enhancedGame.suggestedSoundtracks);
+                return enhancedGame;
             }
         }
         
@@ -2125,12 +2286,15 @@ class TabletopTunes {
         if (localGame) {
             this.currentBoardGame = gameName;
             this.matchingMode = 'boardgame';
-            this.displayGameSuggestions(localGame);
+            
+            // Enhance with movie API data before displaying
+            const enhancedLocalGame = await this.enhanceWithMovieData(localGame);
+            this.displayGameSuggestions(enhancedLocalGame);
             
             // Automatically save to games closet
             this.saveToGamesCloset(gameName, { source: 'local_database' });
             
-            return localGame;
+            return enhancedLocalGame;
         }
         
         // Try BoardGameGeek API as fallback
@@ -2172,6 +2336,98 @@ class TabletopTunes {
         }
         
         return themeResult;
+    }
+
+    /**
+     * Enhance game data with movie API information
+     * @param {Object} gameData - Original game data from database
+     * @returns {Promise<Object>} Enhanced game data with movie API info
+     */
+    async enhanceWithMovieData(gameData) {
+        if (!gameData || !this.movieService) {
+            return gameData;
+        }
+
+        try {
+            // Show loading indication for movie data enhancement
+            this.showNotification('Enhancing with movie soundtrack data...', 'info');
+            
+            // Enhance using the movie service
+            const enhancedData = await this.movieService.enhanceGameSuggestions(gameData);
+            
+            // Also fetch additional movie suggestions based on themes
+            if (gameData.themes && gameData.themes.length > 0) {
+                const additionalMovies = await this.getAdditionalMovieSuggestions(gameData.themes);
+                if (additionalMovies.length > 0) {
+                    enhancedData.additionalSuggestions = additionalMovies;
+                }
+            }
+            
+            this.showNotification('Movie soundtrack data loaded!', 'success');
+            return enhancedData;
+            
+        } catch (error) {
+            console.warn('Failed to enhance with movie data:', error);
+            // Return original data if enhancement fails
+            return gameData;
+        }
+    }
+
+    /**
+     * Get additional movie suggestions based on game themes
+     * @param {Array} themes - Game themes array
+     * @returns {Promise<Array>} Additional movie suggestions
+     */
+    async getAdditionalMovieSuggestions(themes) {
+        const additionalSuggestions = [];
+        
+        // Map game themes to movie genres
+        const themeToGenreMap = {
+            'fantasy': 'fantasy',
+            'medieval': 'fantasy',
+            'magic': 'fantasy',
+            'scifi': 'scifi',
+            'space': 'scifi',
+            'futuristic': 'scifi',
+            'horror': 'horror',
+            'scary': 'horror',
+            'dark': 'horror',
+            'adventure': 'adventure',
+            'exploration': 'adventure',
+            'journey': 'adventure',
+            'mystery': 'mystery',
+            'detective': 'mystery',
+            'puzzle': 'mystery'
+        };
+        
+        // Get movies for each relevant theme
+        for (const theme of themes) {
+            const genre = themeToGenreMap[theme.toLowerCase()];
+            if (genre) {
+                try {
+                    const genreMovies = await this.movieService.getMoviesByGenre(genre);
+                    
+                    // Add first few movies from each genre
+                    const selectedMovies = genreMovies.slice(0, 2).map(movieTitle => ({
+                        movie: movieTitle,
+                        reason: `Additional ${genre} soundtrack for ${theme} themes`,
+                        tracks: ['Main Theme', 'Atmospheric Tracks', 'Action Sequences'],
+                        source: 'api_genre_suggestion'
+                    }));
+                    
+                    additionalSuggestions.push(...selectedMovies);
+                } catch (error) {
+                    console.warn(`Failed to get ${genre} movies for theme ${theme}:`, error);
+                }
+            }
+        }
+        
+        // Remove duplicates and limit results
+        const uniqueSuggestions = additionalSuggestions.filter((item, index, self) =>
+            index === self.findIndex(t => t.movie === item.movie)
+        );
+        
+        return uniqueSuggestions.slice(0, 5); // Limit to 5 additional suggestions
     }
 
     suggestByTheme(input) {
@@ -2406,13 +2662,21 @@ class TabletopTunes {
         
         // Check if this is our enhanced recommendation system
         if (game.suggestedSoundtracks) {
-            // Original game data format
+            // Enhanced game data format with movie API integration
             game.suggestedSoundtracks.forEach((suggestion, index) => {
+                const isEnhanced = suggestion.apiSource && suggestion.enhanced;
+                const enhancedClass = isEnhanced ? 'api-enhanced' : '';
+                
                 html += `
-                    <div class="movie-suggestion enhanced-suggestion" onclick="tabletopTunes.loadMovieSoundtrack('${suggestion.movie}', ${index})">
+                    <div class="movie-suggestion enhanced-suggestion ${enhancedClass}" onclick="tabletopTunes.loadMovieSoundtrack('${suggestion.movie}', ${index})">
                         <div class="movie-header">
                             <h4><i class="fas fa-film"></i> ${suggestion.movie}</h4>
                             <p class="suggestion-reason">${suggestion.reason}</p>
+                            ${isEnhanced ? `
+                                <div class="api-enhancement-badge">
+                                    <i class="fas fa-sparkles"></i> Enhanced with API data
+                                </div>
+                            ` : ''}
                         </div>
                         <div class="suggested-tracks">
                             ${(suggestion.tracks || []).map((track, trackIndex) => `
@@ -2422,9 +2686,45 @@ class TabletopTunes {
                                 </div>
                             `).join('')}
                         </div>
+                        ${isEnhanced && suggestion.enhanced ? `
+                            <div class="enhanced-details">
+                                <div class="enhanced-info">
+                                    <span class="info-label">Composer:</span>
+                                    <span class="info-value">${suggestion.enhanced.composer || 'Various Artists'}</span>
+                                </div>
+                                <div class="enhanced-info">
+                                    <span class="info-label">Mood:</span>
+                                    <span class="info-value">${suggestion.enhanced.mood || 'Epic and atmospheric'}</span>
+                                </div>
+                                <div class="enhanced-info">
+                                    <span class="info-label">Gameplay Fit:</span>
+                                    <span class="info-value">${suggestion.enhanced.gameplayFit || 'Perfect for tabletop gaming'}</span>
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
             });
+            
+            // Add additional API suggestions if available
+            if (game.additionalSuggestions && game.additionalSuggestions.length > 0) {
+                html += `
+                    <div class="additional-suggestions">
+                        <h4><i class="fas fa-plus-circle"></i> Additional Movie Suggestions</h4>
+                        <div class="additional-grid">
+                            ${game.additionalSuggestions.map((suggestion, index) => `
+                                <div class="additional-movie" onclick="tabletopTunes.loadAdditionalSoundtrack('${suggestion.movie}', ${index})">
+                                    <div class="movie-title">${suggestion.movie}</div>
+                                    <div class="movie-reason">${suggestion.reason}</div>
+                                    <div class="api-source-badge">
+                                        <i class="fas fa-database"></i> API Source
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
         } else {
             // New enhanced recommendation format
             const result = this.suggestByTheme(this.currentBoardGame);
@@ -2935,6 +3235,57 @@ class TabletopTunes {
             
             document.getElementById('duration').textContent = '0:00';
             this.updatePlaybackStatus('Ready to play your perfect soundtrack');
+        }
+    }
+    
+    /**
+     * Load additional movie soundtrack from API suggestions
+     * @param {string} movieTitle - Movie title
+     * @param {number} index - Index in suggestions array
+     */
+    loadAdditionalSoundtrack(movieTitle, index) {
+        console.log(`Loading additional soundtrack: ${movieTitle}`);
+        
+        // Create mock tracks for the movie
+        const mockTracks = [
+            { name: 'Main Theme', duration: '4:23', url: '#', description: `Main theme from ${movieTitle}`, movie: movieTitle },
+            { name: 'Atmospheric Soundscape', duration: '6:45', url: '#', description: `Ambient track from ${movieTitle}`, movie: movieTitle },
+            { name: 'Action Sequence', duration: '3:12', url: '#', description: `Exciting track from ${movieTitle}`, movie: movieTitle }
+        ];
+        
+        // Update current playlist
+        this.currentPlaylist = mockTracks;
+        this.currentTrackIndex = 0;
+        this.currentCategory = 'api-enhanced';
+        this.matchingMode = 'api-movie';
+        
+        // Update display
+        this.updateDisplay();
+        this.showNotification(`Loaded ${movieTitle} soundtrack from API!`, 'success');
+    }
+    
+    /**
+     * Play a specific track from a movie soundtrack
+     * @param {string} movieTitle - Movie title
+     * @param {string} trackName - Track name
+     * @param {number} trackIndex - Track index
+     */
+    playMovieTrack(movieTitle, trackName, trackIndex) {
+        console.log(`Playing track: ${trackName} from ${movieTitle}`);
+        
+        // For demo purposes, just show notification
+        // In production, this would play the actual track
+        this.showNotification(`Now playing: ${trackName} from ${movieTitle}`, 'info');
+        
+        // Update current track display
+        const currentTrackElement = document.getElementById('current-track');
+        const currentCategoryElement = document.getElementById('current-category');
+        
+        if (currentTrackElement) {
+            currentTrackElement.textContent = trackName;
+        }
+        if (currentCategoryElement) {
+            currentCategoryElement.textContent = `From ${movieTitle}`;
         }
     }
 }

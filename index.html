@@ -682,10 +682,24 @@
         </div>
     </div>
     
-    <script src="script.js"></script>
+    <script src="game-soundtrack-data.js"></script>
+    <script src="bgg-api-service.js"></script>
+    <script src="movie-api-service.js"></script>
+    <script src="script.js?v=20241228b"></script>
     <script>
-        // Register Service Worker for PWA functionality
-        if ('serviceWorker' in navigator) {
+        // Manually create the TabletopTunes instance after all scripts load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof TabletopTunes !== 'undefined') {
+                window.tabletopTunes = new TabletopTunes();
+                console.log('TabletopTunes instance created successfully');
+            } else {
+                console.error('TabletopTunes class not found');
+            }
+        });
+    </script>
+    <script>
+        // Register Service Worker for PWA functionality - DISABLED FOR DEVELOPMENT
+        if (false && 'serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Only register service worker for http/https protocols
                 if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
