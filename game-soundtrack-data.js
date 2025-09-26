@@ -4,8 +4,22 @@
 const BOARD_GAMES_DATABASE = {
   // Strategy Games
   'Settlers of Catan': {
+    // BGG Data
+    id: 13,
+    yearPublished: 1995,
+    minPlayers: 3,
+    maxPlayers: 4,
+    playingTime: 120,
+    rating: 7.2,
+    complexity: 2.32,
+    categories: ['Civilization', 'Economic', 'Negotiation'],
+    mechanisms: ['Dice Rolling', 'Hand Management', 'Modular Board', 'Road Building', 'Route/Network Building', 'Set Collection', 'Trading'],
+    families: ['Catan', 'Country: Germany'],
+    source: 'boardgamegeek',
+    // Theme Analysis
     category: 'strategy',
     themes: ['exploration', 'building', 'medieval', 'peaceful'],
+    detectedThemes: 'exploration building trade civilization',
     suggestedSoundtracks: [
       { movie: 'Lord of the Rings: The Fellowship of the Ring', reason: 'Epic journey and fellowship building', tracks: ['Concerning Hobbits', 'The Bridge of Khazad Dum', 'May It Be'] },
       { movie: 'How to Train Your Dragon', reason: 'Adventure and discovery themes', tracks: ['This Is Berk', 'Dragon Training', 'Test Drive'] },
@@ -35,8 +49,22 @@ const BOARD_GAMES_DATABASE = {
 
   // Adventure Games  
   'Gloomhaven': {
+    // BGG Data
+    id: 174430,
+    yearPublished: 2017,
+    minPlayers: 1,
+    maxPlayers: 4,
+    playingTime: 120,
+    rating: 8.7,
+    complexity: 3.86,
+    categories: ['Adventure', 'Exploration', 'Fantasy', 'Fighting', 'Miniatures'],
+    mechanisms: ['Campaign / Battle Card Driven', 'Cooperative Game', 'Grid Movement', 'Hand Management', 'Legacy Game', 'Modular Board', 'Role Playing', 'Simultaneous Action Selection', 'Storytelling', 'Variable Player Powers'],
+    families: ['Campaign Games', 'Fantasy', 'Legacy'],
+    source: 'boardgamegeek',
+    // Theme Analysis
     category: 'adventure',
     themes: ['fantasy', 'combat', 'dungeon', 'epic', 'dark'],
+    detectedThemes: 'fantasy adventure dungeon combat',
     suggestedSoundtracks: [
       { movie: 'The Lord of the Rings: The Two Towers', reason: 'Epic fantasy battles and darkness', tracks: ['Forth Eorlingas', 'The Battle of Helm\'s Deep', 'Isengard Unleashed'] },
       { movie: 'Conan the Barbarian', reason: 'Dark fantasy adventure', tracks: ['Anvil of Crom', 'Riddle of Steel', 'The Kitchen'] },
@@ -45,8 +73,22 @@ const BOARD_GAMES_DATABASE = {
   },
 
   'Pandemic': {
+    // BGG Data
+    id: 30549,
+    yearPublished: 2008,
+    minPlayers: 2,
+    maxPlayers: 4,
+    playingTime: 45,
+    rating: 7.6,
+    complexity: 2.40,
+    categories: ['Medical'],
+    mechanisms: ['Action Point Allowance System', 'Cooperative Game', 'Hand Management', 'Point to Point Movement', 'Set Collection', 'Trading', 'Variable Player Powers'],
+    families: ['Medical Theme', 'Pandemic'],
+    source: 'boardgamegeek',
+    // Theme Analysis
     category: 'cooperative',
     themes: ['tension', 'urgency', 'global', 'medical', 'crisis'],
+    detectedThemes: 'medical crisis global cooperation',
     suggestedSoundtracks: [
       { movie: 'Contagion', reason: 'Perfect pandemic theme match', tracks: ['The Blue Day', 'Erin Mears', 'For Dan'] },
       { movie: '28 Days Later', reason: 'Intense crisis atmosphere', tracks: ['The Beginning', 'Rage', 'In the House - In a Heartbeat'] },
@@ -76,8 +118,22 @@ const BOARD_GAMES_DATABASE = {
   },
 
   'Scythe': {
+    // BGG Data
+    id: 169786,
+    yearPublished: 2016,
+    minPlayers: 1,
+    maxPlayers: 5,
+    playingTime: 115,
+    rating: 8.3,
+    complexity: 3.42,
+    categories: ['Economic', 'Fighting', 'Science Fiction', 'Territory Building'],
+    mechanisms: ['Area Control / Area Influence', 'Grid Movement', 'Simultaneous Action Selection', 'Variable Player Powers'],
+    families: ['Alternate History', 'Scythe', 'Steampunk'],
+    source: 'boardgamegeek',
+    // Theme Analysis
     category: 'strategy',
     themes: ['steampunk', 'alternative history', 'mechs', 'farming', 'war'],
+    detectedThemes: 'steampunk mechs alternative history war',
     suggestedSoundtracks: [
       { movie: 'Mortal Engines', reason: 'Steampunk mechanical themes', tracks: ['London', 'Hester Shaw', 'The Hunting Ground'] },
       { movie: 'Wild Wild West', reason: 'Alternative history steampunk', tracks: ['Wild Wild West Theme', 'The Spider', 'Mechanical Mayhem'] },

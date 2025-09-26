@@ -2306,16 +2306,24 @@ class TabletopTunes {
                 this.matchingMode = 'boardgame';
                 this.displayBGGGameSuggestions(bggGame);
                 
-                // Automatically save to games closet with BGG data
+                // Automatically save to games closet with complete BGG data
                 this.saveToGamesCloset(gameName, { 
                     source: 'boardgamegeek',
                     bggData: {
+                        id: bggGame.id,
                         yearPublished: bggGame.yearPublished,
                         minPlayers: bggGame.minPlayers,
                         maxPlayers: bggGame.maxPlayers,
                         playingTime: bggGame.playingTime,
                         rating: bggGame.rating,
-                        description: bggGame.description
+                        complexity: bggGame.complexity,
+                        description: bggGame.description,
+                        categories: bggGame.categories,
+                        mechanisms: bggGame.mechanisms,
+                        families: bggGame.families,
+                        themes: bggGame.themes,
+                        category: bggGame.category,
+                        suggestedSoundtracks: bggGame.suggestedSoundtracks
                     }
                 });
                 

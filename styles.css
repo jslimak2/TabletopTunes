@@ -2649,6 +2649,36 @@ input:focus,
     margin-bottom: var(--space-xl);
 }
 
+/* Action Buttons - Cyberpunk Theme */
+.action-btn {
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: var(--radius-terminal);
+    padding: var(--space-md) var(--space-lg);
+    color: var(--terminal-black);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    white-space: nowrap;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    box-shadow: var(--shadow-terminal);
+    text-decoration: none;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-neon);
+}
+
+.action-btn.secondary {
+    background: var(--secondary-gradient);
+}
+
 .action-btn.large {
     padding: var(--space-lg) var(--space-xl);
     font-size: 1rem;
