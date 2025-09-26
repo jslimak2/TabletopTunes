@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TabletopTunes - Remote Control</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #21262d;
+            --terminal-green: #00ff41;
+            --terminal-blue: #00bfff;
+            --terminal-border: #30363d;
+            --text-primary: #e6edf3;
+            --text-muted: #8b949e;
+            --accent-color: #58a6ff;
+            --success-color: #238636;
+            --warning-color: #d29922;
+            --error-color: #da3633;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+        }
+
+        .remote-container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border: 1px solid var(--terminal-border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .remote-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .remote-header h1 {
+            color: var(--terminal-green);
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--error-color);
+        }
+
+        .status-dot.connected {
+            background: var(--success-color);
+        }
+
+        .control-section {
+            margin-bottom: 24px;
+        }
+
+        .control-section h3 {
+            color: var(--accent-color);
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .control-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--terminal-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            padding: 16px 12px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .control-btn:hover {
+            background: var(--accent-color);
+            color: var(--bg-primary);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn i {
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+
+        .theme-selector {
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--terminal-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            padding: 12px;
+            font-size: 0.9rem;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--bg-secondary);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--terminal-green);
+            cursor: pointer;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .quick-btn {
+            background: linear-gradient(135deg, var(--terminal-green), #2ea043);
+            border: none;
+            border-radius: 8px;
+            color: var(--bg-primary);
+            padding: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .quick-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 65, 0.3);
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .back-link a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+
+        .back-link a:hover {
+            color: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="remote-container">
+        <div class="remote-header">
+            <h1><i class="fas fa-remote-control"></i> Remote Control</h1>
+            <p style="color: var(--text-muted); font-size: 0.8rem;">Control TV Display from Phone</p>
+        </div>
+
+        <div class="connection-status">
+            <div class="status-dot" id="status-dot"></div>
+            <span id="connection-text">Connecting to display...</span>
+        </div>
+
+        <div class="control-section">
+            <h3><i class="fas fa-palette"></i> Visual Themes</h3>
+            <select class="theme-selector" id="theme-selector">
+                <option value="fantasy">🏰 Fantasy Dungeon</option>
+                <option value="scifi">🚀 Sci-Fi Planet</option>
+                <option value="horror">👻 Horror Night</option>
+                <option value="tavern">🍺 Tavern Hall</option>
+            </select>
+        </div>
+
+        <div class="control-section">
+            <h3><i class="fas fa-magic"></i> Visual Controls</h3>
+            <div class="control-grid">
+                <button class="control-btn" onclick="sendCommand('newScene')">
+                    <i class="fas fa-sync"></i>
+                    New Scene
+                </button>
+                <button class="control-btn" onclick="sendCommand('fullscreen')">
+                    <i class="fas fa-expand"></i>
+                    Fullscreen
+                </button>
+                <button class="control-btn" onclick="sendCommand('pause')">
+                    <i class="fas fa-pause"></i>
+                    Pause
+                </button>
+                <button class="control-btn" onclick="sendCommand('resume')">
+                    <i class="fas fa-play"></i>
+                    Resume
+                </button>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h3><i class="fas fa-volume-up"></i> Audio Reactivity</h3>
+            <div class="volume-control">
+                <i class="fas fa-volume-down"></i>
+                <input type="range" class="volume-slider" id="sensitivity-slider" 
+                       min="0" max="100" value="70" onchange="updateSensitivity(this.value)">
+                <i class="fas fa-volume-up"></i>
+            </div>
+            <div style="text-align: center; margin-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
+                Music Sensitivity: <span id="sensitivity-value">70%</span>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+            <div class="quick-actions">
+                <button class="quick-btn" onclick="sendCommand('partyMode')">
+                    🎉 Party Mode - High Energy Visuals
+                </button>
+                <button class="quick-btn" onclick="sendCommand('ambientMode')">
+                    🧘 Ambient Mode - Calm Visuals
+                </button>
+            </div>
+        </div>
+
+        <div class="back-link">
+            <a href="index.html" onclick="history.back(); return false;">
+                <i class="fas fa-arrow-left"></i> Back to TabletopTunes
+            </a>
+        </div>
+    </div>
+
+    <script>
+        class RemoteControl {
+            constructor() {
+                this.connected = false;
+                this.displayWindows = [];
+                this.init();
+            }
+
+            init() {
+                // Simulate connection to display windows
+                this.connect();
+                
+                // Setup theme selector
+                document.getElementById('theme-selector').addEventListener('change', (e) => {
+                    this.sendCommand('changeTheme', { theme: e.target.value });
+                });
+
+                // Get URL parameters to set initial theme
+                const urlParams = new URLSearchParams(window.location.search);
+                const theme = urlParams.get('theme');
+                if (theme) {
+                    document.getElementById('theme-selector').value = theme;
+                }
+            }
+
+            connect() {
+                // Simulate connection process
+                setTimeout(() => {
+                    this.connected = true;
+                    this.updateConnectionStatus();
+                }, 1500);
+            }
+
+            updateConnectionStatus() {
+                const statusDot = document.getElementById('status-dot');
+                const connectionText = document.getElementById('connection-text');
+                
+                if (this.connected) {
+                    statusDot.classList.add('connected');
+                    connectionText.textContent = 'Connected to TV Display';
+                } else {
+                    statusDot.classList.remove('connected');
+                    connectionText.textContent = 'Disconnected';
+                }
+            }
+
+            sendCommand(command, data = {}) {
+                if (!this.connected) {
+                    alert('Not connected to display');
+                    return;
+                }
+
+                // Try to communicate with parent window or opened windows
+                const message = {
+                    type: 'remoteCommand',
+                    command: command,
+                    data: data,
+                    timestamp: Date.now()
+                };
+
+                // Send to all possible display windows
+                try {
+                    // Try parent/opener window
+                    if (window.opener && !window.opener.closed) {
+                        window.opener.postMessage(message, '*');
+                    }
+                    
+                    // Try to find display windows
+                    if (typeof window.displayWindows !== 'undefined') {
+                        window.displayWindows.forEach(win => {
+                            if (!win.closed) {
+                                win.postMessage(message, '*');
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.log('Could not send command:', e);
+                }
+
+                // Show feedback
+                this.showCommandFeedback(command);
+            }
+
+            showCommandFeedback(command) {
+                const feedbackMap = {
+                    'newScene': '🎨 Generated new scene',
+                    'fullscreen': '🖥️ Toggled fullscreen',
+                    'pause': '⏸️ Paused visuals',
+                    'resume': '▶️ Resumed visuals',
+                    'partyMode': '🎉 Party mode activated',
+                    'ambientMode': '🧘 Ambient mode activated',
+                    'changeTheme': '🎨 Theme changed'
+                };
+
+                const message = feedbackMap[command] || `✓ ${command} executed`;
+                
+                // Create temporary feedback element
+                const feedback = document.createElement('div');
+                feedback.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: var(--success-color);
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    font-size: 0.8rem;
+                    z-index: 1000;
+                    transition: opacity 0.3s ease;
+                `;
+                feedback.textContent = message;
+                document.body.appendChild(feedback);
+
+                setTimeout(() => {
+                    feedback.style.opacity = '0';
+                    setTimeout(() => {
+                        if (feedback.parentNode) {
+                            feedback.parentNode.removeChild(feedback);
+                        }
+                    }, 300);
+                }, 2000);
+            }
+        }
+
+        // Global functions for UI
+        function sendCommand(command, data = {}) {
+            if (window.remoteControl) {
+                window.remoteControl.sendCommand(command, data);
+            }
+        }
+
+        function updateSensitivity(value) {
+            document.getElementById('sensitivity-value').textContent = value + '%';
+            sendCommand('setSensitivity', { value: parseInt(value) });
+        }
+
+        // Initialize remote control
+        document.addEventListener('DOMContentLoaded', () => {
+            window.remoteControl = new RemoteControl();
+        });
+    </script>
+</body>
+</html>

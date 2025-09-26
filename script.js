@@ -4287,10 +4287,12 @@ class TabletopTunes {
 
         // Initialize projection controls
         const projectTvBtn = document.getElementById('project-to-tv');
+        const openDisplayBtn = document.getElementById('open-display-mode');
         const enableVoiceBtn = document.getElementById('enable-voice');
         const connectSpotifyBtn = document.getElementById('connect-spotify-mini');
         
         if (projectTvBtn) projectTvBtn.addEventListener('click', () => this.projectToTV());
+        if (openDisplayBtn) openDisplayBtn.addEventListener('click', () => this.openDisplayMode());
         if (enableVoiceBtn) enableVoiceBtn.addEventListener('click', () => this.enableVoiceControl());
         if (connectSpotifyBtn) connectSpotifyBtn.addEventListener('click', () => this.connectSpotifyMini());
 
@@ -4321,6 +4323,28 @@ class TabletopTunes {
             adventure: { primary: '#ff6b35', secondary: '#f7931e', accent: '#ffd700' },
             tavern: { primary: '#8b4513', secondary: '#daa520', accent: '#ff8c00' }
         };
+
+        // Create audio context for music analysis
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = 256;
+            this.analyser.smoothingTimeConstant = 0.8;
+            this.bufferLength = this.analyser.frequencyBinCount;
+            this.dataArray = new Uint8Array(this.bufferLength);
+            this.timeDataArray = new Uint8Array(this.analyser.fftSize);
+            
+            // Beat detection variables
+            this.beatHistory = [];
+            this.beatThreshold = 1.3;
+            this.beatCutoff = 0;
+            this.beatTime = 0;
+            
+            console.log('Web Audio API initialized successfully');
+        } catch (e) {
+            console.log('Web Audio API not supported, using simulation');
+            this.useAudioSimulation = true;
+        }
         
         // Start the dynamic feedback loop
         this.startDynamicFeedbackLoop();
@@ -4345,8 +4369,8 @@ class TabletopTunes {
     updateMusicReactiveVisualizations() {
         if (!this.isPlaying || !this.currentPlaylist.length) return;
 
-        // Simulate audio analysis data (in production, this would come from Web Audio API)
-        const audioData = this.simulateAudioData();
+        // Get audio analysis data (real or simulated)
+        const audioData = this.useAudioSimulation ? this.simulateAudioData() : this.getAudioData();
         
         // Update landscape elements with music reactivity
         this.updateMusicReactiveLandscape(audioData);
@@ -4359,6 +4383,91 @@ class TabletopTunes {
         
         // Update game pieces with color pulsing
         this.updateMusicReactiveGamePieces(audioData);
+
+        // Sync with display window if open
+        if (this.displayWindow && !this.displayWindow.closed) {
+            try {
+                this.displayWindow.postMessage({
+                    type: 'audioData',
+                    data: audioData,
+                    isPlaying: this.isPlaying,
+                    currentTrack: this.currentPlaylist[this.currentTrackIndex]
+                }, '*');
+            } catch (e) {
+                // Display window might be from different origin
+            }
+        }
+    }
+
+    /**
+     * Get real audio analysis data from Web Audio API
+     */
+    getAudioData() {
+        if (!this.analyser || !this.dataArray) {
+            return this.simulateAudioData();
+        }
+
+        this.analyser.getByteFrequencyData(this.dataArray);
+        this.analyser.getByteTimeDomainData(this.timeDataArray);
+
+        // Calculate frequency band averages
+        const bass = this.getFrequencyAverage(0, 10);
+        const mid = this.getFrequencyAverage(10, 50);
+        const treble = this.getFrequencyAverage(50, this.bufferLength);
+        const overall = this.getFrequencyAverage(0, this.bufferLength);
+
+        // Beat detection
+        const beat = this.detectBeat(overall);
+
+        return {
+            volume: overall / 255,
+            bass: bass / 255,
+            mid: mid / 255,
+            treble: treble / 255,
+            beat: beat ? 1 : 0,
+            rawData: Array.from(this.dataArray)
+        };
+    }
+
+    /**
+     * Get average frequency value for a range
+     */
+    getFrequencyAverage(startIndex, endIndex) {
+        let sum = 0;
+        const count = endIndex - startIndex;
+        
+        for (let i = startIndex; i < endIndex; i++) {
+            sum += this.dataArray[i];
+        }
+        
+        return sum / count;
+    }
+
+    /**
+     * Detect beats in the audio
+     */
+    detectBeat(currentLevel) {
+        const now = Date.now();
+        
+        // Add current level to history
+        this.beatHistory.push({ level: currentLevel, time: now });
+        
+        // Keep only recent history (last 500ms)
+        this.beatHistory = this.beatHistory.filter(entry => now - entry.time < 500);
+        
+        if (this.beatHistory.length < 10) return false;
+        
+        // Calculate average level
+        const avgLevel = this.beatHistory.reduce((sum, entry) => sum + entry.level, 0) / this.beatHistory.length;
+        
+        // Beat detected if current level is significantly above average and enough time has passed
+        const isBeat = currentLevel > avgLevel * this.beatThreshold && now - this.beatTime > 300;
+        
+        if (isBeat) {
+            this.beatTime = now;
+        }
+        
+        return isBeat;
     }
 
     /**
@@ -4954,17 +5063,156 @@ class TabletopTunes {
     projectToTV() {
         const statusElement = document.getElementById('tv-status');
         
-        // Simulate TV connection
-        if (statusElement) {
-            statusElement.textContent = 'Connecting...';
-            statusElement.style.color = 'var(--warning-color)';
+        // Open display mode in new window/tab for casting
+        const currentGame = this.currentGame?.name || 'default';
+        const currentTheme = this.getCurrentVisualizationTheme();
+        const displayUrl = `display.html?theme=${currentTheme}&game=${encodeURIComponent(currentGame)}`;
+        
+        // Try to open in new window for casting
+        const displayWindow = window.open(displayUrl, 'TabletopTunesDisplay', 
+            'width=1920,height=1080,fullscreen=yes,menubar=no,toolbar=no,location=no,status=no,scrollbars=no');
+        
+        if (displayWindow) {
+            if (statusElement) {
+                statusElement.textContent = 'Connecting...';
+                statusElement.style.color = 'var(--warning-color)';
+                
+                setTimeout(() => {
+                    statusElement.textContent = 'Display Active';
+                    statusElement.style.color = 'var(--success-color)';
+                    this.showNotification('Display mode opened! Cast this tab to your TV or use fullscreen mode.', 'success');
+                    this.showCastingInstructions();
+                }, 1000);
+            }
             
-            setTimeout(() => {
-                statusElement.textContent = 'Connected';
-                statusElement.style.color = 'var(--success-color)';
-                this.showNotification('Connected to TV! Visualizations are now projecting.', 'success');
-            }, 2000);
+            // Store reference for communication
+            this.displayWindow = displayWindow;
+            
+            // Listen for window close
+            const checkClosed = setInterval(() => {
+                if (displayWindow.closed) {
+                    clearInterval(checkClosed);
+                    if (statusElement) {
+                        statusElement.textContent = 'Disconnected';
+                        statusElement.style.color = 'var(--text-muted)';
+                    }
+                    this.displayWindow = null;
+                }
+            }, 1000);
+        } else {
+            this.showNotification('Pop-up blocked! Please allow pop-ups and try again.', 'warning');
         }
+    }
+
+    getCurrentVisualizationTheme() {
+        // Get current active visualization theme
+        const landscapeSelect = document.getElementById('landscape-theme');
+        if (landscapeSelect) {
+            return landscapeSelect.value;
+        }
+        
+        // Fallback based on current game category
+        if (this.currentGame) {
+            const category = this.currentGame.category || 'fantasy';
+            const themeMap = {
+                'fantasy': 'fantasy',
+                'scifi': 'scifi', 
+                'horror': 'horror',
+                'tavern': 'tavern',
+                'adventure': 'fantasy',
+                'ambient': 'fantasy'
+            };
+            return themeMap[category] || 'fantasy';
+        }
+        
+        return 'fantasy';
+    }
+
+    showCastingInstructions() {
+        const instructions = `
+            <div style="background: var(--bg-card); border: 1px solid var(--terminal-border); border-radius: 8px; padding: 20px; margin-top: 10px;">
+                <h4 style="color: var(--terminal-green); margin-bottom: 15px;">
+                    <i class="fas fa-tv"></i> How to Cast to Your TV
+                </h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    <div>
+                        <h5 style="color: var(--accent-color); margin-bottom: 8px;">
+                            <i class="fab fa-chrome"></i> Chrome/Edge
+                        </h5>
+                        <p style="font-size: 0.9rem; line-height: 1.4;">
+                            Click the <strong>⋮</strong> menu → <strong>Cast</strong> → Select your TV
+                        </p>
+                    </div>
+                    <div>
+                        <h5 style="color: var(--accent-color); margin-bottom: 8px;">
+                            <i class="fab fa-apple"></i> Safari/iOS
+                        </h5>
+                        <p style="font-size: 0.9rem; line-height: 1.4;">
+                            Use <strong>AirPlay</strong> icon or Screen Mirroring from Control Center
+                        </p>
+                    </div>
+                    <div>
+                        <h5 style="color: var(--accent-color); margin-bottom: 8px;">
+                            <i class="fas fa-hdmi-port"></i> HDMI
+                        </h5>
+                        <p style="font-size: 0.9rem; line-height: 1.4;">
+                            Connect laptop to TV, press <strong>F</strong> for fullscreen
+                        </p>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--terminal-border); font-size: 0.8rem; color: var(--text-muted);">
+                    <strong>Tip:</strong> Use your phone/tablet to control music while visuals play on TV!
+                </div>
+            </div>
+        `;
+        
+        // Find a good place to show instructions (in the projection controls area)
+        const projectionControls = document.querySelector('.projection-controls');
+        if (projectionControls) {
+            let instructionsDiv = projectionControls.querySelector('.casting-instructions');
+            if (!instructionsDiv) {
+                instructionsDiv = document.createElement('div');
+                instructionsDiv.className = 'casting-instructions';
+                projectionControls.appendChild(instructionsDiv);
+            }
+            instructionsDiv.innerHTML = instructions;
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                if (instructionsDiv) {
+                    instructionsDiv.style.opacity = '0';
+                    instructionsDiv.style.transition = 'opacity 0.5s ease';
+                    setTimeout(() => {
+                        if (instructionsDiv && instructionsDiv.parentNode) {
+                            instructionsDiv.parentNode.removeChild(instructionsDiv);
+                        }
+                    }, 500);
+                }
+            }, 10000);
+        }
+    }
+
+    /**
+     * Open display mode directly (simpler than projectToTV)
+     */
+    openDisplayMode() {
+        const currentGame = this.currentGame?.name || 'default';
+        const currentTheme = this.getCurrentVisualizationTheme();
+        const displayUrl = `display.html?theme=${currentTheme}&game=${encodeURIComponent(currentGame)}`;
+        
+        // Open display mode in new tab
+        const displayWindow = window.open(displayUrl, '_blank');
+        
+        // Also offer remote control
+        setTimeout(() => {
+            const remoteUrl = `remote-control.html?theme=${currentTheme}&game=${encodeURIComponent(currentGame)}`;
+            const useRemote = confirm('Display mode opened! Would you like to open the mobile remote control as well?');
+            if (useRemote) {
+                window.open(remoteUrl, '_blank');
+            }
+        }, 1000);
+        
+        this.showNotification('Display mode opened in new tab! Drag to TV browser or use fullscreen (F key).', 'success');
     }
 
     enableVoiceControl() {
