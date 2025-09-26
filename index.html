@@ -79,13 +79,13 @@
                             <button id="search-game-btn" class="search-btn"><i class="fas fa-search"></i></button>
                         </div>
                         <div class="quick-actions-compact">
-                            <button class="quick-btn" onclick="tabletopTunes.quickStart('ambient')" title="Start Ambient">
+                            <button class="quick-btn" onclick="safeCall('quickStart', 'ambient')" title="Start Ambient">
                                 <i class="fas fa-leaf"></i>
                             </button>
-                            <button class="quick-btn" onclick="tabletopTunes.quickStart('fantasy')" title="Epic Fantasy">
+                            <button class="quick-btn" onclick="safeCall('quickStart', 'fantasy')" title="Epic Fantasy">
                                 <i class="fas fa-dragon"></i>
                             </button>
-                            <button class="quick-btn" onclick="tabletopTunes.quickStart('horror')" title="Horror Night">
+                            <button class="quick-btn" onclick="safeCall('quickStart', 'horror')" title="Horror Night">
                                 <i class="fas fa-ghost"></i>
                             </button>
                             <button id="quick-random-btn" class="quick-btn surprise-btn" title="Surprise Me!">
@@ -98,11 +98,11 @@
                     <div class="popular-games-compact">
                         <span class="popular-label">Popular:</span>
                         <div class="game-chips-compact">
-                            <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Gloomhaven')">Gloomhaven</span>
-                            <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Settlers of Catan')">Catan</span>
-                            <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Pandemic')">Pandemic</span>
-                            <span class="game-chip" onclick="tabletopTunes.searchBoardGame('Scythe')">Scythe</span>
-                            <span class="game-chip more-games" onclick="tabletopTunes.switchTab('games-closet')">+ More in My Games</span>
+                            <span class="game-chip" onclick="safeCall('searchBoardGame', 'Gloomhaven')">Gloomhaven</span>
+                            <span class="game-chip" onclick="safeCall('searchBoardGame', 'Settlers of Catan')">Catan</span>
+                            <span class="game-chip" onclick="safeCall('searchBoardGame', 'Pandemic')">Pandemic</span>
+                            <span class="game-chip" onclick="safeCall('searchBoardGame', 'Scythe')">Scythe</span>
+                            <span class="game-chip more-games" onclick="safeCall('switchTab', 'games-closet')">+ More in My Games</span>
                         </div>
                     </div>
                 </div>
@@ -859,6 +859,15 @@
     <script src="movie-api-service.js"></script>
     <script src="script.js?v=20241228b"></script>
     <script>
+        // Safe function to call tabletopTunes methods with error handling
+        function safeCall(methodName, ...args) {
+            if (window.tabletopTunes && typeof window.tabletopTunes[methodName] === 'function') {
+                return window.tabletopTunes[methodName](...args);
+            } else {
+                console.warn(`TabletopTunes not ready or method ${methodName} not found`);
+            }
+        }
+        
         // Manually create the TabletopTunes instance after all scripts load
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof TabletopTunes !== 'undefined') {
