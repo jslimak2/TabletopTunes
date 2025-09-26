@@ -27,6 +27,9 @@ class TabletopTunes {
         this.savedGames = {};
         this.gamePlaylistHistory = {};
         
+        // Track current game suggestions for playlist building
+        this.currentGameSuggestions = null;
+        
         // Mock soundtrack data (in a real app, this would come from a server or local files)
         this.soundtracks = {
             ambient: [
@@ -109,7 +112,7 @@ class TabletopTunes {
             selectedTab.classList.add('active');
             selectedBtn.classList.add('active');
             
-            // Special handling for Games Closet tab
+            // Special handling for My Games tab
             if (tabName === 'games-closet') {
                 this.displayGamesCloset();
                 this.updateGamesClosetStats();
@@ -1223,7 +1226,7 @@ class TabletopTunes {
         localStorage.setItem('tabletopTunes_loop', this.isLoop);
     }
     
-    // Games Closet functionality
+    // My Games functionality
     loadGamesCloset() {
         // Load saved games
         const savedGamesData = localStorage.getItem('tabletopTunes_savedGames');
@@ -1255,7 +1258,7 @@ class TabletopTunes {
         // Save to localStorage
         localStorage.setItem('tabletopTunes_savedGames', JSON.stringify(this.savedGames));
         
-        this.showNotification(`"${gameName}" added to Games Closet!`);
+        this.showNotification(`"${gameName}" added to My Games!`);
     }
     
     trackGamePlaylist(gameName, playlistName, playlistData) {
@@ -1304,7 +1307,7 @@ class TabletopTunes {
                 localStorage.setItem('tabletopTunes_gameHistory', JSON.stringify(this.gamePlaylistHistory));
             }
             
-            this.showNotification(`"${gameName}" removed from Games Closet`);
+            this.showNotification(`"${gameName}" removed from My Games`);
             this.displayGamesCloset(); // Refresh display
         }
     }
@@ -1326,7 +1329,7 @@ class TabletopTunes {
                         <i class="fas fa-dice-d20"></i>
                     </div>
                     <h3>Start Your Gaming Journey</h3>
-                    <p>Your games closet is waiting for its first adventure! When you search for board games and find soundtracks, they'll automatically be saved here.</p>
+                    <p>Your game collection is waiting for its first adventure! When you search for board games and find soundtracks, they'll automatically be saved here.</p>
                     <div class="empty-state-actions">
                         <button class="action-btn primary large" onclick="tabletopTunes.switchTab('main')">
                             <i class="fas fa-search"></i> Find Your First Game
@@ -1687,7 +1690,7 @@ class TabletopTunes {
             });
         });
         this.displayGamesCloset();
-        this.showNotification('Added sample games to your closet!', 'success');
+        this.showNotification('Added sample games to your collection!', 'success');
     }
     
     toggleGameMenu(gameName) {
@@ -1883,12 +1886,12 @@ class TabletopTunes {
     }
     
     clearAllGames() {
-        if (confirm('Are you sure you want to remove all games from your closet? This action cannot be undone.')) {
+        if (confirm('Are you sure you want to remove all games from your collection? This action cannot be undone.')) {
             this.savedGames = {};
             this.gamePlaylistHistory = {};
             this.saveUserData();
             this.displayGamesCloset();
-            this.showNotification('All games cleared from closet', 'success');
+            this.showNotification('All games cleared from collection', 'success');
         }
     }
     
@@ -2119,45 +2122,42 @@ class TabletopTunes {
         const suggestions = [];
         const normalizedQuery = query.toLowerCase();
         
-        // First, check games closet for matches (prioritize user's saved games)
+        // Only check My Games for matches (no more built-in database)
         Object.keys(this.savedGames).forEach(gameName => {
             if (gameName.toLowerCase().includes(normalizedQuery)) {
                 suggestions.push({
                     name: gameName,
-                    source: 'closet',
+                    source: 'mygames',
                     category: this.savedGames[gameName].detectedCategory || 'adventure',
                     themes: this.savedGames[gameName].themes || []
                 });
             }
         });
         
-        // Check local database for matches
-        if (typeof BOARD_GAMES_DATABASE !== 'undefined') {
-            Object.keys(BOARD_GAMES_DATABASE).forEach(gameName => {
-                // Avoid duplicates if game is already in closet
-                if (gameName.toLowerCase().includes(normalizedQuery) && !this.savedGames[gameName]) {
+        // Add theme-based suggestions if not many matches found
+        if (suggestions.length < 3) {
+            const themes = ['fantasy', 'scifi', 'horror', 'adventure', 'mystery', 'western'];
+            themes.forEach(theme => {
+                if (theme.includes(normalizedQuery) || normalizedQuery.includes(theme)) {
                     suggestions.push({
-                        name: gameName,
-                        source: 'database',
-                        category: BOARD_GAMES_DATABASE[gameName].category,
-                        themes: BOARD_GAMES_DATABASE[gameName].themes
+                        name: `${theme.charAt(0).toUpperCase() + theme.slice(1)} Games`,
+                        source: 'theme',
+                        category: theme,
+                        isCategory: true
                     });
                 }
             });
         }
         
-        // Add theme-based suggestions
-        const themes = ['fantasy', 'scifi', 'horror', 'adventure', 'mystery', 'western'];
-        themes.forEach(theme => {
-            if (theme.includes(normalizedQuery) || normalizedQuery.includes(theme)) {
-                suggestions.push({
-                    name: `${theme.charAt(0).toUpperCase() + theme.slice(1)} Games`,
-                    source: 'theme',
-                    category: theme,
-                    isCategory: true
-                });
-            }
-        });
+        // Add a "Search BGG" suggestion if query is long enough and not in My Games
+        if (query.length >= 3 && suggestions.length === 0) {
+            suggestions.push({
+                name: `Search BGG for "${query}"`,
+                source: 'bgg_search',
+                category: 'search',
+                isSearch: true
+            });
+        }
         
         // Limit to top 5 suggestions
         return suggestions.slice(0, 5);
@@ -2192,12 +2192,22 @@ class TabletopTunes {
                 const escapedSource = this.escapeHtml(suggestion.source);
                 const escapedThemes = suggestion.themes ? this.escapeHtml(suggestion.themes.slice(0, 3).join(', ')) : '';
                 
+                // Map internal source names to user-friendly display names
+                const sourceDisplayMap = {
+                    'mygames': 'My Games',
+                    'theme': 'Theme Match',
+                    'bgg_search': 'Search BGG'
+                };
+                const displaySource = sourceDisplayMap[suggestion.source] || suggestion.source;
+                
                 const iconClass = suggestion.isCategory 
                     ? 'fa-layer-group' 
-                    : suggestion.source === 'closet' 
-                        ? 'fa-archive' 
-                        : 'fa-dice';
-                
+                    : suggestion.isSearch
+                        ? 'fa-search'
+                        : suggestion.source === 'mygames' 
+                            ? 'fa-user-circle' 
+                            : 'fa-dice';
+
                 return `
                     <div class="live-search-item" onclick="tabletopTunes.selectLiveSearchResult('${escapedName}', '${escapedSource}')">
                         <i class="fas ${iconClass}" style="margin-right: 8px; color: var(--primary-color);"></i>
@@ -2205,12 +2215,12 @@ class TabletopTunes {
                             <span class="suggestion-name">${escapedName}</span>
                             ${escapedThemes ? `<span class="suggestion-themes">${escapedThemes}</span>` : ''}
                         </div>
-                        <span class="suggestion-source">${escapedSource}</span>
+                        <span class="suggestion-source">${displaySource}</span>
                     </div>
                 `;
             }).join('');
         }
-        
+
         container.style.display = 'block';
     }
     
@@ -2279,55 +2289,87 @@ class TabletopTunes {
         }
     }
 
-    async searchBoardGame(gameName) {
-        console.log('searchBoardGame called with:', gameName);
-        // First, check local database for exact match
-        if (typeof BOARD_GAMES_DATABASE !== 'undefined') {
-            const game = BOARD_GAMES_DATABASE[gameName];
-            if (game) {
-                console.log('Found exact match in database:', game);
-                this.currentBoardGame = gameName;
-                this.matchingMode = 'boardgame';
-                
-                // Enhance with movie API data before displaying
-                const enhancedGame = await this.enhanceWithMovieData(game);
-                this.displayGameSuggestions(enhancedGame);
-                
-                // Automatically save to games closet
-                this.saveToGamesCloset(gameName, { source: 'local_database' });
-                
-                console.log('Returning game object with suggestedSoundtracks:', !!enhancedGame.suggestedSoundtracks);
-                return enhancedGame;
+    /**
+     * Find a game in the user's My Games collection
+     * @param {string} gameName - Name to search for
+     * @returns {Object|null} Found game or null
+     */
+    findGameInMyGames(gameName) {
+        const normalizedSearch = gameName.toLowerCase();
+        
+        // First try exact match
+        for (const [savedName, gameData] of Object.entries(this.savedGames)) {
+            if (savedName.toLowerCase() === normalizedSearch) {
+                return { ...gameData, name: savedName };
             }
         }
         
-        // Check for partial matches in local database
-        const localGame = this.getGameFromDatabase(gameName.toLowerCase());
-        if (localGame) {
-            this.currentBoardGame = gameName;
-            this.matchingMode = 'boardgame';
-            
-            // Enhance with movie API data before displaying
-            const enhancedLocalGame = await this.enhanceWithMovieData(localGame);
-            this.displayGameSuggestions(enhancedLocalGame);
-            
-            // Automatically save to games closet
-            this.saveToGamesCloset(gameName, { source: 'local_database' });
-            
-            return enhancedLocalGame;
+        // Then try partial match
+        for (const [savedName, gameData] of Object.entries(this.savedGames)) {
+            if (savedName.toLowerCase().includes(normalizedSearch) || 
+                normalizedSearch.includes(savedName.toLowerCase())) {
+                return { ...gameData, name: savedName };
+            }
         }
         
-        // Try BoardGameGeek API as fallback
-        this.showNotification('Searching BoardGameGeek database...', 'info');
+        return null;
+    }
+
+    /**
+     * Display suggestions for a game from My Games
+     * @param {Object} gameData - Game data from My Games
+     */
+    displayMyGameSuggestions(gameData) {
+        if (gameData.bggData) {
+            // If it has BGG data, display using BGG format
+            this.displayBGGGameSuggestions(gameData.bggData, gameData.name);
+        } else if (gameData.source === 'theme_analysis') {
+            // If it's from theme analysis, regenerate suggestions
+            const themeResult = this.suggestByTheme(gameData.name);
+            if (themeResult) {
+                this.displayThemeBasedSuggestions(themeResult, gameData.name);
+            }
+        } else {
+            // Fallback to theme analysis for any other cases
+            const themeResult = this.suggestByTheme(gameData.name);
+            if (themeResult) {
+                this.displayThemeBasedSuggestions(themeResult, gameData.name);
+            }
+        }
+    }
+
+    async searchBoardGame(gameName) {
+        console.log('searchBoardGame called with:', gameName);
+        
+        // First, check if game is already in My Games
+        const existingGame = this.findGameInMyGames(gameName);
+        if (existingGame) {
+            console.log('Found game in My Games:', existingGame);
+            this.currentBoardGame = existingGame.name;
+            this.matchingMode = 'boardgame';
+            
+            // Display using the saved game data
+            this.displayMyGameSuggestions(existingGame);
+            
+            // Update play count
+            this.saveToGamesCloset(existingGame.name);
+            
+            return existingGame;
+        }
+        
+        // Game not in My Games, search BGG
+        this.showNotification('Searching BoardGameGeek for new game...', 'info');
         try {
             const bggGame = await this.bggService.getGameByName(gameName);
             if (bggGame) {
-                this.currentBoardGame = gameName;
+                // Use BGG's official name
+                const officialName = bggGame.name || gameName;
+                this.currentBoardGame = officialName;
                 this.matchingMode = 'boardgame';
                 this.displayBGGGameSuggestions(bggGame);
                 
-                // Automatically save to games closet with comprehensive BGG data
-                this.saveToGamesCloset(gameName, { 
+                // Save to My Games with BGG's official name and data
+                this.saveToGamesCloset(officialName, { 
                     source: 'boardgamegeek',
                     bggData: {
                         yearPublished: bggGame.yearPublished,
@@ -2345,6 +2387,7 @@ class TabletopTunes {
                     }
                 });
                 
+                this.showNotification(`Added "${officialName}" to My Games from BGG!`, 'success');
                 return bggGame;
             }
         } catch (error) {
@@ -2352,9 +2395,10 @@ class TabletopTunes {
         }
         
         // Final fallback to theme-based matching
+        this.showNotification('Game not found on BGG, using theme analysis...', 'info');
         const themeResult = this.suggestByTheme(gameName);
         if (themeResult) {
-            // Even theme-based matches get saved to closet
+            // Save theme-based matches to My Games too
             this.saveToGamesCloset(gameName, { 
                 source: 'theme_analysis',
                 detectedCategory: themeResult.category 
@@ -2459,30 +2503,8 @@ class TabletopTunes {
     suggestByTheme(input) {
         const normalizedInput = input.toLowerCase().trim();
         
-        // First, check if we have specific game data
-        const gameData = this.getGameFromDatabase(normalizedInput);
-        if (gameData) {
-            return this.processGameData(gameData, input);
-        }
-        
-        // Fallback to advanced theme analysis
+        // Use advanced theme analysis directly (no more database lookup)
         return this.analyzeThemeKeywords(normalizedInput, input);
-    }
-
-    getGameFromDatabase(gameName) {
-        // Check exact matches first
-        if (window.BOARD_GAMES_DATABASE && window.BOARD_GAMES_DATABASE[gameName]) {
-            return window.BOARD_GAMES_DATABASE[gameName];
-        }
-        
-        // Check partial matches
-        const gameKeys = Object.keys(window.BOARD_GAMES_DATABASE || {});
-        const match = gameKeys.find(key => 
-            key.toLowerCase().includes(gameName) || 
-            gameName.includes(key.toLowerCase())
-        );
-        
-        return match ? window.BOARD_GAMES_DATABASE[match] : null;
     }
 
     processGameData(gameData, originalInput) {
@@ -2684,6 +2706,9 @@ class TabletopTunes {
         
         if (categoryTitle) categoryTitle.textContent = `Recommendations for ${this.currentBoardGame}`;
         
+        // Store suggestions for playlist building
+        this.currentGameSuggestions = game.suggestedSoundtracks || [];
+        
         let html = `<div class="game-suggestions">`;
         
         // Check if this is our enhanced recommendation system
@@ -2702,7 +2727,11 @@ class TabletopTunes {
                                 <div class="api-enhancement-badge">
                                     <i class="fas fa-sparkles"></i> Enhanced with API data
                                 </div>
-                            ` : ''}
+                            ` : `
+                                <div class="my-games-badge">
+                                    <i class="fas fa-user-circle"></i> From My Games
+                                </div>
+                            `}
                         </div>
                         <div class="suggested-tracks">
                             ${(suggestion.tracks || []).map((track, trackIndex) => `
@@ -2835,6 +2864,9 @@ class TabletopTunes {
         const categoryTitle = document.querySelector('.playlist-section h3');
         
         if (categoryTitle) categoryTitle.textContent = `Recommendations for ${bggGame.name}`;
+        
+        // Store suggestions for playlist building
+        this.currentGameSuggestions = bggGame.suggestedSoundtracks || [];
         
         let html = `<div class="game-suggestions bgg-suggestions">`;
         
@@ -3001,6 +3033,9 @@ class TabletopTunes {
         // Generate movie-style suggestions from theme analysis
         const enhancedResult = this.generateMovieStyleSuggestions(result, gameName);
         
+        // Store suggestions for playlist building
+        this.currentGameSuggestions = enhancedResult.suggestedSoundtracks || [];
+        
         let html = `<div class="game-suggestions">`;
         
         // Add theme analysis info at the top (similar to what we had before but more compact)
@@ -3091,23 +3126,33 @@ class TabletopTunes {
         this.showNotification(`Loading ${movieName} soundtrack...`);
         
         // Create a playlist from the movie suggestion
-        if (this.currentBoardGame && typeof BOARD_GAMES_DATABASE !== 'undefined') {
-            const game = BOARD_GAMES_DATABASE[this.currentBoardGame];
-            const suggestion = game.suggestedSoundtracks[suggestionIndex];
+        if (this.currentBoardGame) {
+            // Try to get game data from My Games or current display
+            const gameData = this.findGameInMyGames(this.currentBoardGame);
+            let suggestion = null;
             
-            // Convert movie tracks to our format
-            this.currentPlaylist = suggestion.tracks.map((trackName, index) => ({
-                name: trackName,
-                duration: `9:99`,
-                url: "#",
-                description: `From ${movieName}`,
-                movie: movieName
-            }));
+            // Look for the suggestion in various possible sources
+            if (gameData && gameData.bggData && gameData.bggData.suggestedSoundtracks) {
+                suggestion = gameData.bggData.suggestedSoundtracks[suggestionIndex];
+            } else if (this.currentGameSuggestions && this.currentGameSuggestions[suggestionIndex]) {
+                suggestion = this.currentGameSuggestions[suggestionIndex];
+            }
             
-            this.currentTrackIndex = 0;
-            this.currentCategory = 'movie';
-            this.displayPlaylist();
-            this.updateCurrentTrackInfo();
+            if (suggestion && suggestion.tracks) {
+                // Convert movie tracks to our format
+                this.currentPlaylist = suggestion.tracks.map((trackName, index) => ({
+                    name: trackName,
+                    duration: `9:99`,
+                    url: "#",
+                    description: `From ${movieName}`,
+                    movie: movieName
+                }));
+                
+                this.currentTrackIndex = 0;
+                this.currentCategory = 'movie';
+                this.displayPlaylist();
+                this.updateCurrentTrackInfo();
+            }
         }
     }
 
