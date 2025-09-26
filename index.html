@@ -107,8 +107,57 @@
                     </div>
                 </div>
 
-                <!-- Enhanced Player Section -->
-                <div class="player-section">
+                <!-- Enhanced Categories Section - Moved up for better discovery -->
+                <div class="categories-section">
+                    <h3>Browse by Mood</h3>
+                    <div class="category-grid">
+                        <div class="category-card" data-category="ambient">
+                            <h4><i class="fas fa-leaf"></i> Ambient</h4>
+                            <p>Peaceful and atmospheric soundscapes for relaxed gameplay</p>
+                        </div>
+                        <div class="category-card" data-category="fantasy">
+                            <h4><i class="fas fa-dragon"></i> Fantasy</h4>
+                            <p>Epic orchestral themes for medieval and magical adventures</p>
+                        </div>
+                        <div class="category-card" data-category="scifi">
+                            <h4><i class="fas fa-rocket"></i> Sci-Fi</h4>
+                            <p>Futuristic electronic sounds for space and technology themes</p>
+                        </div>
+                        <div class="category-card" data-category="horror">
+                            <h4><i class="fas fa-ghost"></i> Horror</h4>
+                            <p>Suspenseful and eerie music for scary game sessions</p>
+                        </div>
+                        <div class="category-card" data-category="adventure">
+                            <h4><i class="fas fa-compass"></i> Adventure</h4>
+                            <p>Dynamic and exciting themes for exploration games</p>
+                        </div>
+                        <div class="category-card" data-category="tavern">
+                            <h4><i class="fas fa-beer"></i> Tavern</h4>
+                            <p>Jovial and social music for gathering and celebration</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Playlist Section - Now more prominent for search results -->
+                <div class="playlist-section">
+                    <div class="playlist-header">
+                        <h3>Current Playlist</h3>
+                        <div class="playlist-controls">
+                            <input type="text" id="playlist-name" placeholder="Playlist name">
+                            <button id="save-playlist" class="primary">Save</button>
+                            <button id="load-playlist" class="secondary">Load</button>
+                            <button id="clear-playlist-btn" class="danger" title="Clear current playlist">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="playlist-content" id="track-list">
+                        <p>Enter a board game name above or select a soundtrack category</p>
+                    </div>
+                </div>
+
+                <!-- Enhanced Player Section - Now contextual, appears when music is selected -->
+                <div class="player-section" id="player-section" style="display: none;">
                     <div class="track-info">
                         <!-- Game Session Indicator -->
                         <div id="game-session-indicator" class="game-session-indicator" style="display: none;">
@@ -164,55 +213,6 @@
                             </div>
                             <div class="time-display" id="duration">0:00</div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Enhanced Categories Section -->
-                <div class="categories-section">
-                    <h3>Browse by Mood</h3>
-                    <div class="category-grid">
-                        <div class="category-card" data-category="ambient">
-                            <h4><i class="fas fa-leaf"></i> Ambient</h4>
-                            <p>Peaceful and atmospheric soundscapes for relaxed gameplay</p>
-                        </div>
-                        <div class="category-card" data-category="fantasy">
-                            <h4><i class="fas fa-dragon"></i> Fantasy</h4>
-                            <p>Epic orchestral themes for medieval and magical adventures</p>
-                        </div>
-                        <div class="category-card" data-category="scifi">
-                            <h4><i class="fas fa-rocket"></i> Sci-Fi</h4>
-                            <p>Futuristic electronic sounds for space and technology themes</p>
-                        </div>
-                        <div class="category-card" data-category="horror">
-                            <h4><i class="fas fa-ghost"></i> Horror</h4>
-                            <p>Suspenseful and eerie music for scary game sessions</p>
-                        </div>
-                        <div class="category-card" data-category="adventure">
-                            <h4><i class="fas fa-compass"></i> Adventure</h4>
-                            <p>Dynamic and exciting themes for exploration games</p>
-                        </div>
-                        <div class="category-card" data-category="tavern">
-                            <h4><i class="fas fa-beer"></i> Tavern</h4>
-                            <p>Jovial and social music for gathering and celebration</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Enhanced Playlist Section -->
-                <div class="playlist-section">
-                    <div class="playlist-header">
-                        <h3>Current Playlist</h3>
-                        <div class="playlist-controls">
-                            <input type="text" id="playlist-name" placeholder="Playlist name">
-                            <button id="save-playlist" class="primary">Save</button>
-                            <button id="load-playlist" class="secondary">Load</button>
-                            <button id="clear-playlist-btn" class="danger" title="Clear current playlist">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="playlist-content" id="track-list">
-                        <p>Enter a board game name above or select a soundtrack category</p>
                     </div>
                 </div>
             </div>
