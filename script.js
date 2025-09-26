@@ -2958,8 +2958,8 @@ class TabletopTunes {
                 ...suggestion,
                 enhanced: {
                     composer: 'Various Artists',
-                    mood: this.getCategoryMood(category),
-                    gameplayFit: `Perfect for ${category} themed board games`
+                    mood: this.getCategoryMood(categoryToMovies[category] ? category : 'ambient'),
+                    gameplayFit: `Perfect for ${categoryToMovies[category] ? category : 'ambient'} themed board games`
                 },
                 apiSource: false, // Mark as generated, not from API
                 themeGenerated: true // Mark as theme-based generation
