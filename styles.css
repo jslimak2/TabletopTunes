@@ -1052,6 +1052,62 @@ header p::after {
     color: var(--accent-color);
 }
 
+/* 🎮 Game Session Indicator */
+.game-session-indicator {
+    background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    box-shadow: var(--shadow-neon-purple);
+    animation: var(--animation-pulse-neon);
+}
+
+.game-session-content {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.game-session-content i {
+    color: var(--dice-gold);
+    animation: spin 2s linear infinite;
+}
+
+.game-session-content strong {
+    color: var(--text-accent);
+    flex: 1;
+}
+
+.end-session-btn {
+    background: rgba(255, 0, 85, 0.2);
+    border: 1px solid var(--critical-red);
+    border-radius: var(--radius-sm);
+    color: var(--critical-red);
+    padding: var(--space-xs);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.end-session-btn:hover {
+    background: var(--critical-red);
+    color: white;
+    transform: scale(1.1);
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 /* 🏷️ Enhanced Terminal-Style Track Metadata */
 .track-meta {
     display: flex;
