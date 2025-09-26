@@ -110,6 +110,18 @@
                 <!-- Enhanced Player Section -->
                 <div class="player-section">
                     <div class="track-info">
+                        <!-- Game Session Indicator -->
+                        <div id="game-session-indicator" class="game-session-indicator" style="display: none;">
+                            <div class="game-session-content">
+                                <i class="fas fa-dice-d20"></i>
+                                <span>Game Session:</span>
+                                <strong id="game-session-name"></strong>
+                                <button id="end-game-session" class="end-session-btn" title="End game session">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
                         <h3 id="current-track">No track selected</h3>
                         <p id="current-category">Select a soundtrack category</p>
                         <div class="track-meta">

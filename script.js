@@ -83,6 +83,50 @@ class TabletopTunes {
         this.updateDisplay();
         this.initializeElectronIntegration();
         this.initializeQuickActions();
+        this.initializeGameSessionIndicator();
+    }
+    
+    // Initialize game session indicator functionality
+    initializeGameSessionIndicator() {
+        const endSessionBtn = document.getElementById('end-game-session');
+        if (endSessionBtn) {
+            endSessionBtn.addEventListener('click', () => this.endGameSession());
+        }
+    }
+    
+    // Update game session indicator visibility and content
+    updateGameSessionIndicator() {
+        const indicator = document.getElementById('game-session-indicator');
+        const gameName = document.getElementById('game-session-name');
+        
+        if (!indicator || !gameName) return;
+        
+        if (this.currentBoardGame) {
+            indicator.style.display = 'block';
+            gameName.textContent = this.currentBoardGame;
+        } else {
+            indicator.style.display = 'none';
+        }
+    }
+    
+    // End the current game session
+    endGameSession() {
+        if (!this.currentBoardGame) return;
+        
+        const gameName = this.currentBoardGame;
+        this.currentBoardGame = null;
+        
+        // Update UI elements
+        this.updateGameSessionIndicator();
+        this.updateCurrentTrackInfo();
+        
+        // Update playlist header
+        const playlistHeader = document.querySelector('.playlist-header h3');
+        if (playlistHeader && playlistHeader.textContent.includes('for')) {
+            playlistHeader.textContent = 'Current Playlist';
+        }
+        
+        this.showNotification(`Ended game session for ${gameName}`, 'default');
     }
     
     // Tab System Management
@@ -912,8 +956,27 @@ class TabletopTunes {
         this.currentCategory = category;
         this.currentPlaylist = [...this.soundtracks[category]];
         this.currentTrackIndex = 0;
+        
+        // Update playlist header based on context
+        const playlistHeader = document.querySelector('.playlist-header h3');
+        if (playlistHeader) {
+            if (this.currentBoardGame) {
+                playlistHeader.textContent = `Playing for ${this.currentBoardGame}`;
+            } else {
+                playlistHeader.textContent = 'Current Playlist';
+            }
+        }
+        
         this.displayPlaylist();
         this.updateCurrentTrackInfo();
+        
+        // Show appropriate notification based on context
+        const categoryName = this.getCurrentCategoryName();
+        if (this.currentBoardGame) {
+            this.showNotification(`Selected ${categoryName} soundtrack for ${this.currentBoardGame}`, 'success');
+        } else {
+            this.showNotification(`${categoryName} soundtrack loaded`);
+        }
     }
     
     // Load category method for quick actions
@@ -956,11 +1019,22 @@ class TabletopTunes {
         if (this.currentPlaylist.length > 0 && this.currentTrackIndex < this.currentPlaylist.length) {
             const currentTrack = this.currentPlaylist[this.currentTrackIndex];
             trackTitle.textContent = currentTrack.name;
-            trackCategory.textContent = `${this.getCurrentCategoryName()} - ${currentTrack.description}`;
+            
+            // Show game context when playing for a specific game
+            if (this.currentBoardGame) {
+                trackCategory.textContent = `Playing for ${this.currentBoardGame} • ${this.getCurrentCategoryName()} - ${currentTrack.description}`;
+            } else {
+                trackCategory.textContent = `${this.getCurrentCategoryName()} - ${currentTrack.description}`;
+            }
         } else {
             trackTitle.textContent = 'No track selected';
-            trackCategory.textContent = 'Select a soundtrack category';
+            trackCategory.textContent = this.currentBoardGame ? 
+                `Ready to play for ${this.currentBoardGame} - Select a soundtrack category` : 
+                'Select a soundtrack category';
         }
+        
+        // Update game session indicator
+        this.updateGameSessionIndicator();
     }
     
     getCurrentCategoryName() {
@@ -1934,7 +2008,12 @@ class TabletopTunes {
         // Switch to main tab and perform search
         this.switchTab('main');
         document.getElementById('game-search').value = gameName;
+        this.currentBoardGame = gameName; // Set game context immediately
         this.performGameSearch();
+        
+        // Update UI to show game session is starting
+        this.updateGameSessionIndicator();
+        this.showNotification(`Starting game session for ${gameName}`, 'success');
     }
     
     showGamePlaylists(gameName) {
@@ -2017,10 +2096,16 @@ class TabletopTunes {
                 if (categoryCard) categoryCard.classList.add('active');
             }
             
+            // Update playlist header to show game context
+            const playlistHeader = document.querySelector('.playlist-header h3');
+            if (playlistHeader) {
+                playlistHeader.textContent = `Playing for ${gameName}`;
+            }
+            
             this.displayPlaylist();
             this.updateCurrentTrackInfo();
             
-            this.showNotification(`Loaded "${playlistName}" for ${gameName}`);
+            this.showNotification(`Loaded "${playlistName}" for ${gameName}`, 'success');
             
             // Track this usage
             this.trackGamePlaylist(gameName, playlistName, playlist.data);
@@ -3400,7 +3485,12 @@ class TabletopTunes {
         if (this.currentPlaylist.length > 0 && this.currentTrackIndex < this.currentPlaylist.length) {
             const track = this.currentPlaylist[this.currentTrackIndex];
             currentTrackElement.textContent = track.name;
-            currentCategoryElement.textContent = `Track ${this.currentTrackIndex + 1} of ${this.currentPlaylist.length}`;
+            // Show game context when playing for a specific game
+            if (this.currentBoardGame) {
+                currentCategoryElement.textContent = `Playing for ${this.currentBoardGame} • Track ${this.currentTrackIndex + 1} of ${this.currentPlaylist.length}`;
+            } else {
+                currentCategoryElement.textContent = `Track ${this.currentTrackIndex + 1} of ${this.currentPlaylist.length}`;
+            }
             
             if (trackMovieElement) {
                 trackMovieElement.textContent = track.movie || '';
@@ -3417,7 +3507,9 @@ class TabletopTunes {
             this.updatePlaybackStatus(`Now playing: ${track.name} from ${track.movie}`);
         } else {
             currentTrackElement.textContent = 'No track selected';
-            currentCategoryElement.textContent = 'Select a soundtrack category';
+            currentCategoryElement.textContent = this.currentBoardGame ? 
+                `Ready to play for ${this.currentBoardGame} - Select a soundtrack category` : 
+                'Select a soundtrack category';
             
             if (trackMovieElement) trackMovieElement.style.display = 'none';
             if (trackDescriptionElement) trackDescriptionElement.style.display = 'none';
@@ -3425,6 +3517,9 @@ class TabletopTunes {
             document.getElementById('duration').textContent = '0:00';
             this.updatePlaybackStatus('Ready to play your perfect soundtrack');
         }
+        
+        // Update game session indicator
+        this.updateGameSessionIndicator();
     }
     
     /**
