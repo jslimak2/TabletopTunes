@@ -2878,6 +2878,9 @@ class TabletopTunes {
             this.currentBoardGame = existingGame.name;
             this.matchingMode = 'boardgame';
             
+            // Show selected game area
+            this.showSelectedGameArea(existingGame);
+            
             // Display using the saved game data
             this.displayMyGameSuggestions(existingGame);
             
@@ -2896,10 +2899,9 @@ class TabletopTunes {
                 const officialName = bggGame.name || gameName;
                 this.currentBoardGame = officialName;
                 this.matchingMode = 'boardgame';
-                this.displayBGGGameSuggestions(bggGame);
                 
-                // Store game data temporarily for later saving when music is played
-                this.pendingGameData = {
+                // Create game data object for selected game area
+                const gameData = {
                     name: officialName,
                     source: 'boardgamegeek',
                     bggData: {
@@ -2914,9 +2916,18 @@ class TabletopTunes {
                         mechanisms: bggGame.mechanisms || [],
                         families: bggGame.families || [],
                         themes: bggGame.themes || [],
-                        detectedCategory: bggGame.category
+                        detectedCategory: bggGame.category,
+                        image: bggGame.image
                     }
                 };
+                
+                // Show selected game area
+                this.showSelectedGameArea(gameData);
+                
+                this.displayBGGGameSuggestions(bggGame);
+                
+                // Store game data temporarily for later saving when music is played
+                this.pendingGameData = gameData;
                 
                 this.showNotification(`Found "${officialName}" on BGG! Play a soundtrack to add it to My Games.`, 'info');
                 return bggGame;
@@ -2929,12 +2940,18 @@ class TabletopTunes {
         this.showNotification('Game not found on BGG, using theme analysis...', 'info');
         const themeResult = this.suggestByTheme(gameName);
         if (themeResult) {
-            // Store theme-based game data temporarily for later saving when music is played
-            this.pendingGameData = {
+            // Create game data object for selected game area
+            const gameData = {
                 name: gameName,
                 source: 'theme_analysis',
                 detectedCategory: themeResult.category 
             };
+            
+            // Show selected game area
+            this.showSelectedGameArea(gameData);
+            
+            // Store theme-based game data temporarily for later saving when music is played
+            this.pendingGameData = gameData;
         }
         
         return themeResult;
@@ -3974,7 +3991,7 @@ class TabletopTunes {
         // In production, this would play the actual track
         this.showNotification(`Now playing: ${trackName} from ${movieTitle}`, 'info');
         
-        // Update current track display
+        // Update current track display in player section
         const currentTrackElement = document.getElementById('current-track');
         const currentCategoryElement = document.getElementById('current-category');
         
@@ -3983,6 +4000,236 @@ class TabletopTunes {
         }
         if (currentCategoryElement) {
             currentCategoryElement.textContent = `From ${movieTitle}`;
+        }
+        
+        // Update selected game area with current song
+        this.updateCurrentSongDisplay(trackName, movieTitle);
+        
+        // Update upcoming queue (using current playlist)
+        this.updateUpcomingQueue(this.currentPlaylist, trackIndex);
+        
+        // Show player section if hidden
+        const playerSection = document.getElementById('player-section');
+        if (playerSection && playerSection.style.display === 'none') {
+            playerSection.style.display = 'block';
+        }
+    }
+
+    // ===============================================
+    // 🎮 Selected Game Area Management
+    // ===============================================
+
+    /**
+     * Show and populate the selected game area
+     * @param {Object} gameData - Game data object
+     */
+    showSelectedGameArea(gameData) {
+        const selectedGameArea = document.getElementById('selected-game-area');
+        if (!selectedGameArea) return;
+
+        // Show the area
+        selectedGameArea.style.display = 'block';
+        
+        // Populate game information
+        this.populateGameDisplay(gameData);
+        
+        // Initialize music context (empty state)
+        this.resetMusicContext();
+        
+        // Add animation effect
+        selectedGameArea.classList.add('game-selected');
+        setTimeout(() => selectedGameArea.classList.remove('game-selected'), 500);
+    }
+
+    /**
+     * Populate the game display section
+     * @param {Object} gameData - Game data object
+     */
+    populateGameDisplay(gameData) {
+        const gameImage = document.getElementById('selected-game-image');
+        const gameTitle = document.getElementById('selected-game-title');
+        const gameDescription = document.getElementById('selected-game-description');
+        const gameTheme = document.getElementById('selected-game-theme');
+        const gamePlayers = document.getElementById('selected-game-players');
+
+        if (gameTitle) {
+            gameTitle.textContent = gameData.name || 'Unknown Game';
+        }
+
+        if (gameDescription) {
+            let description = 'Board game with curated soundtrack suggestions';
+            if (gameData.bggData?.description) {
+                // Truncate long descriptions
+                description = this.truncateText(gameData.bggData.description, 120);
+            } else if (gameData.detectedCategory) {
+                description = `${gameData.detectedCategory.charAt(0).toUpperCase() + gameData.detectedCategory.slice(1)} themed board game`;
+            }
+            gameDescription.textContent = description;
+        }
+
+        if (gameImage) {
+            // Use a placeholder game image - in production, this would come from BGG API
+            gameImage.src = gameData.bggData?.image || `https://via.placeholder.com/120x120/4ecdc4/ffffff?text=${encodeURIComponent(gameData.name?.charAt(0) || 'G')}`;
+            gameImage.alt = `${gameData.name || 'Game'} cover`;
+        }
+
+        if (gameTheme && gameData.detectedCategory) {
+            gameTheme.textContent = gameData.detectedCategory;
+            gameTheme.style.display = 'inline-block';
+        }
+
+        if (gamePlayers && gameData.bggData) {
+            const minPlayers = gameData.bggData.minPlayers;
+            const maxPlayers = gameData.bggData.maxPlayers;
+            if (minPlayers && maxPlayers) {
+                gamePlayers.textContent = minPlayers === maxPlayers ? `${minPlayers} players` : `${minPlayers}-${maxPlayers} players`;
+                gamePlayers.style.display = 'inline-block';
+            }
+        }
+    }
+
+    /**
+     * Update the current song display in the selected game area
+     * @param {string} songTitle - Song title
+     * @param {string} movieTitle - Movie title
+     * @param {Object} options - Additional options
+     */
+    updateCurrentSongDisplay(songTitle, movieTitle, options = {}) {
+        const songImage = document.getElementById('current-song-image');
+        const songTitleEl = document.getElementById('current-song-title');
+        const songMovie = document.getElementById('current-song-movie');
+        const currentSongDisplay = document.querySelector('.current-song-display');
+
+        if (songTitleEl) {
+            songTitleEl.textContent = songTitle || 'No song playing';
+        }
+
+        if (songMovie) {
+            songMovie.textContent = movieTitle || 'Select a soundtrack';
+        }
+
+        if (songImage) {
+            // Use a placeholder movie poster - in production, this would come from movie API
+            songImage.src = options.movieImage || `https://via.placeholder.com/80x120/6c5ce7/ffffff?text=${encodeURIComponent(movieTitle?.charAt(0) || 'M')}`;
+            songImage.alt = `${movieTitle || 'Movie'} poster`;
+        }
+
+        if (currentSongDisplay) {
+            if (songTitle && movieTitle) {
+                currentSongDisplay.classList.add('playing');
+            } else {
+                currentSongDisplay.classList.remove('playing');
+            }
+        }
+
+        // Show the selected game area if it's not visible
+        this.ensureSelectedGameAreaVisible();
+    }
+
+    /**
+     * Update the upcoming songs queue
+     * @param {Array} playlist - Array of upcoming songs
+     * @param {number} currentIndex - Current song index
+     */
+    updateUpcomingQueue(playlist = [], currentIndex = 0) {
+        const queueList = document.getElementById('upcoming-songs');
+        if (!queueList) return;
+
+        // Clear existing queue
+        queueList.innerHTML = '';
+
+        // Get next 3-5 songs
+        const upcomingSongs = playlist.slice(currentIndex + 1, currentIndex + 4);
+
+        if (upcomingSongs.length === 0) {
+            // Show placeholder
+            queueList.innerHTML = `
+                <div class="queue-item placeholder">
+                    <span class="queue-song">No upcoming songs</span>
+                    <span class="queue-movie"></span>
+                </div>
+            `;
+            return;
+        }
+
+        // Populate queue
+        upcomingSongs.forEach((song, index) => {
+            const queueItem = document.createElement('div');
+            queueItem.className = 'queue-item';
+            queueItem.innerHTML = `
+                <span class="queue-song">${song.name}</span>
+                <span class="queue-movie">${song.movie || 'Unknown'}</span>
+            `;
+            
+            // Add click handler to jump to song
+            queueItem.addEventListener('click', () => {
+                this.jumpToTrack(currentIndex + 1 + index);
+            });
+            
+            queueList.appendChild(queueItem);
+        });
+    }
+
+    /**
+     * Reset music context to empty state
+     */
+    resetMusicContext() {
+        this.updateCurrentSongDisplay('', '');
+        this.updateUpcomingQueue([]);
+        this.updateMiniProgress(0);
+    }
+
+    /**
+     * Update the mini progress bar
+     * @param {number} percentage - Progress percentage (0-100)
+     */
+    updateMiniProgress(percentage) {
+        const progressFill = document.getElementById('mini-progress');
+        const currentTime = document.getElementById('current-time-mini');
+        
+        if (progressFill) {
+            progressFill.style.width = `${percentage}%`;
+        }
+        
+        if (currentTime) {
+            // This would be updated with actual time in production
+            currentTime.textContent = '0:00';
+        }
+    }
+
+    /**
+     * Ensure the selected game area is visible
+     */
+    ensureSelectedGameAreaVisible() {
+        const selectedGameArea = document.getElementById('selected-game-area');
+        if (selectedGameArea && selectedGameArea.style.display === 'none') {
+            selectedGameArea.style.display = 'block';
+        }
+    }
+
+    /**
+     * Truncate text to specified length
+     * @param {string} text - Text to truncate
+     * @param {number} maxLength - Maximum length
+     * @returns {string} Truncated text
+     */
+    truncateText(text, maxLength) {
+        if (!text || text.length <= maxLength) return text;
+        return text.substring(0, maxLength).trim() + '...';
+    }
+
+    /**
+     * Jump to a specific track in the playlist
+     * @param {number} trackIndex - Track index to jump to
+     */
+    jumpToTrack(trackIndex) {
+        if (trackIndex >= 0 && trackIndex < this.currentPlaylist.length) {
+            this.currentTrackIndex = trackIndex;
+            const track = this.currentPlaylist[trackIndex];
+            if (track) {
+                this.playMovieTrack(track.movie, track.name, trackIndex);
+                this.updateUpcomingQueue(this.currentPlaylist, trackIndex);
+            }
         }
     }
 
