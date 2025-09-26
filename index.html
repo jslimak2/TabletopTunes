@@ -620,14 +620,78 @@
             <!-- Visualization Tab Content -->
             <div class="tab-content" id="visualization-tab">
                 <div class="visualization-section">
-                    <h2><i class="fas fa-chart-line"></i> Live Recommendation Insights</h2>
+                    <h2><i class="fas fa-chart-line"></i> AI-Powered Game Visualizations</h2>
                     
+                    <!-- Visualization Controls -->
                     <div class="viz-controls">
                         <input type="text" id="viz-game-input" placeholder="Enter a game to see live analysis...">
                         <button id="viz-analyze-btn">Analyze Game</button>
+                        <button id="start-projector-btn" class="action-btn secondary">
+                            <i class="fas fa-tv"></i> Start TV Projection
+                        </button>
                     </div>
 
+                    <!-- Dynamic Game Board Landscapes -->
                     <div class="visualization-container">
+                        <div class="viz-panel full-width" id="game-landscapes">
+                            <h3><i class="fas fa-mountain"></i> AI-Generated Game Board Landscapes</h3>
+                            <div class="landscape-viewer" id="landscape-viewer">
+                                <canvas id="landscape-canvas" width="800" height="400"></canvas>
+                                <div class="landscape-controls">
+                                    <button class="viz-control-btn" id="generate-landscape">Generate New Scene</button>
+                                    <select id="landscape-theme">
+                                        <option value="fantasy">Fantasy Realm</option>
+                                        <option value="scifi">Sci-Fi Planet</option>
+                                        <option value="horror">Haunted Environment</option>
+                                        <option value="medieval">Medieval Landscape</option>
+                                        <option value="steampunk">Steampunk City</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Animated Meeple Parade -->
+                        <div class="viz-panel" id="meeple-parade">
+                            <h3><i class="fas fa-chess-pawn"></i> Animated Meeple Parade</h3>
+                            <div class="meeple-stage" id="meeple-stage">
+                                <canvas id="meeple-canvas" width="600" height="200"></canvas>
+                                <div class="meeple-controls">
+                                    <button class="viz-control-btn" id="start-parade">Start Parade</button>
+                                    <button class="viz-control-btn" id="sync-music">Sync to Music</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Procedural Dice Visualizer -->
+                        <div class="viz-panel" id="dice-visualizer">
+                            <h3><i class="fas fa-dice-d20"></i> Procedural Dice Visualizer</h3>
+                            <div class="dice-stage" id="dice-stage">
+                                <canvas id="dice-canvas" width="600" height="200"></canvas>
+                                <div class="dice-controls">
+                                    <button class="viz-control-btn" id="roll-dice">Roll Dice</button>
+                                    <select id="dice-type">
+                                        <option value="d6">D6 - Standard</option>
+                                        <option value="d20">D20 - Adventure</option>
+                                        <option value="d100">D100 - Percentile</option>
+                                        <option value="mixed">Mixed Set</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Board Game Piece Tableau -->
+                        <div class="viz-panel" id="piece-tableau">
+                            <h3><i class="fas fa-chess"></i> Board Game Piece Tableau</h3>
+                            <div class="tableau-stage" id="tableau-stage">
+                                <canvas id="tableau-canvas" width="600" height="300"></canvas>
+                                <div class="tableau-controls">
+                                    <button class="viz-control-btn" id="shuffle-pieces">Shuffle Pieces</button>
+                                    <button class="viz-control-btn" id="add-pieces">Add New Pieces</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Analysis Panels (Original) -->
                         <div class="viz-panel" id="analysis-steps">
                             <h3>Analysis Steps</h3>
                             <div class="step-list" id="step-list">

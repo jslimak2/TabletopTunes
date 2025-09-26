@@ -2942,6 +2942,171 @@ input:focus,
     line-height: 1.6;
 }
 
+/* ⚡ Advanced Gaming Visualizations */
+
+/* Visualization Container Enhancements */
+.visualization-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-xl);
+    margin-top: var(--space-xl);
+}
+
+.viz-panel.full-width {
+    grid-column: 1 / -1;
+}
+
+/* Canvas Containers */
+.landscape-viewer,
+.meeple-stage,
+.dice-stage,
+.tableau-stage {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg);
+    border: 1px solid var(--gray-700);
+    backdrop-filter: blur(20px);
+}
+
+/* Canvas Styling */
+canvas {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-lg);
+    background: var(--terminal-black);
+    border: 2px solid var(--primary-color);
+    box-shadow: var(--shadow-neon);
+}
+
+#landscape-canvas {
+    background: linear-gradient(45deg, #1a1a2e, #16213e);
+}
+
+#meeple-canvas {
+    background: linear-gradient(90deg, #0f3460, #16537e);
+}
+
+#dice-canvas {
+    background: radial-gradient(circle, #2d1b69, #11052c);
+}
+
+#tableau-canvas {
+    background: linear-gradient(135deg, #134e5e, #71b280);
+}
+
+/* Visualization Controls */
+.viz-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+    align-items: center;
+    margin-bottom: var(--space-xl);
+    padding: var(--space-lg);
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--gray-700);
+    backdrop-filter: blur(20px);
+}
+
+.landscape-controls,
+.meeple-controls,
+.dice-controls,
+.tableau-controls {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+    margin-top: var(--space-lg);
+    flex-wrap: wrap;
+}
+
+.viz-control-btn {
+    background: var(--secondary-gradient);
+    border: none;
+    border-radius: var(--radius-terminal);
+    padding: var(--space-sm) var(--space-lg);
+    color: white;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    white-space: nowrap;
+    text-transform: uppercase;
+    box-shadow: var(--shadow-terminal);
+}
+
+.viz-control-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-neon-purple);
+    animation: var(--animation-pulse-neon);
+}
+
+/* Select Styling for Theme/Type Selectors */
+#landscape-theme,
+#dice-type {
+    background: var(--bg-secondary);
+    border: 2px solid var(--gray-700);
+    border-radius: var(--radius-terminal);
+    padding: var(--space-sm) var(--space-md);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    min-width: 120px;
+}
+
+#landscape-theme:focus,
+#dice-type:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-neon-cyan);
+}
+
+/* Animation States */
+.viz-panel.animating canvas {
+    animation: var(--animation-pulse-neon);
+}
+
+.viz-panel.generating::before {
+    content: "🎮 Generating...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg-modal);
+    color: var(--primary-color);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-lg);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    z-index: 10;
+}
+
+/* TV Projection Styling */
+#start-projector-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+#start-projector-btn.projecting {
+    background: var(--success-color);
+    animation: var(--animation-pulse-neon);
+}
+
+#start-projector-btn.projecting::after {
+    content: "📺 LIVE";
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: var(--critical-red);
+    color: white;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-weight: bold;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .closet-header {

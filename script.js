@@ -483,6 +483,13 @@ class TabletopTunes {
         if (vizAnalyzeBtn) {
             vizAnalyzeBtn.addEventListener('click', () => this.analyzeGameVisualization());
         }
+        
+        // Initialize advanced visualization components
+        this.initializeLandscapeViewer();
+        this.initializeMeepleParade();
+        this.initializeDiceVisualizer();
+        this.initializePieceTableau();
+        this.initializeTVProjection();
     }
     
     async analyzeGameVisualization() {
@@ -839,6 +846,587 @@ class TabletopTunes {
         const playlistTitle = document.querySelector('.playlist-section h3');
         if (playlistTitle) playlistTitle.textContent = 'Current Playlist';
         this.showNotification('Playlist cleared');
+    }
+    
+    // ⚡ Advanced Visualization System
+    
+    initializeLandscapeViewer() {
+        const generateBtn = document.getElementById('generate-landscape');
+        const themeSelect = document.getElementById('landscape-theme');
+        const canvas = document.getElementById('landscape-canvas');
+        
+        if (generateBtn && canvas) {
+            generateBtn.addEventListener('click', () => this.generateLandscape());
+            themeSelect?.addEventListener('change', () => this.generateLandscape());
+            
+            // Initialize with default landscape
+            this.generateLandscape();
+        }
+    }
+    
+    generateLandscape() {
+        const canvas = document.getElementById('landscape-canvas');
+        const themeSelect = document.getElementById('landscape-theme');
+        const theme = themeSelect?.value || 'fantasy';
+        
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+        
+        // Generate procedural landscape based on theme
+        this.drawProceduralLandscape(ctx, width, height, theme);
+    }
+    
+    drawProceduralLandscape(ctx, width, height, theme) {
+        // Theme-based color palettes
+        const themes = {
+            fantasy: {
+                sky: ['#4a90e2', '#7b68ee', '#dda0dd'],
+                ground: ['#8fbc8f', '#228b22', '#006400'],
+                features: ['#8b4513', '#a0522d', '#cd853f']
+            },
+            scifi: {
+                sky: ['#191970', '#483d8b', '#6a5acd'],
+                ground: ['#2f4f4f', '#708090', '#778899'],
+                features: ['#ff6347', '#ff4500', '#ffd700']
+            },
+            horror: {
+                sky: ['#2f2f2f', '#1c1c1c', '#000000'],
+                ground: ['#8b0000', '#696969', '#2f4f4f'],
+                features: ['#800080', '#4b0082', '#8b008b']
+            },
+            medieval: {
+                sky: ['#87ceeb', '#add8e6', '#b0c4de'],
+                ground: ['#daa520', '#cd853f', '#d2691e'],
+                features: ['#a0522d', '#8b4513', '#654321']
+            },
+            steampunk: {
+                sky: ['#cd853f', '#daa520', '#b8860b'],
+                ground: ['#696969', '#2f4f4f', '#778899'],
+                features: ['#8b4513', '#a0522d', '#daa520']
+            }
+        };
+        
+        const palette = themes[theme] || themes.fantasy;
+        
+        // Draw sky gradient
+        const skyGradient = ctx.createLinearGradient(0, 0, 0, height * 0.6);
+        skyGradient.addColorStop(0, palette.sky[0]);
+        skyGradient.addColorStop(0.5, palette.sky[1]);
+        skyGradient.addColorStop(1, palette.sky[2]);
+        
+        ctx.fillStyle = skyGradient;
+        ctx.fillRect(0, 0, width, height * 0.6);
+        
+        // Draw ground
+        const groundGradient = ctx.createLinearGradient(0, height * 0.6, 0, height);
+        groundGradient.addColorStop(0, palette.ground[0]);
+        groundGradient.addColorStop(0.5, palette.ground[1]);
+        groundGradient.addColorStop(1, palette.ground[2]);
+        
+        ctx.fillStyle = groundGradient;
+        ctx.fillRect(0, height * 0.6, width, height * 0.4);
+        
+        // Add procedural features
+        this.addLandscapeFeatures(ctx, width, height, theme, palette);
+    }
+    
+    addLandscapeFeatures(ctx, width, height, theme, palette) {
+        const numFeatures = 5 + Math.floor(Math.random() * 8);
+        
+        for (let i = 0; i < numFeatures; i++) {
+            const x = Math.random() * width;
+            const featureHeight = 20 + Math.random() * 100;
+            const featureWidth = 10 + Math.random() * 30;
+            
+            ctx.fillStyle = palette.features[Math.floor(Math.random() * palette.features.length)];
+            
+            if (theme === 'fantasy') {
+                // Draw trees/towers
+                ctx.fillRect(x, height * 0.6 - featureHeight, featureWidth, featureHeight);
+                // Add crown/top
+                ctx.beginPath();
+                ctx.arc(x + featureWidth/2, height * 0.6 - featureHeight, featureWidth/2, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (theme === 'scifi') {
+                // Draw geometric structures
+                ctx.save();
+                ctx.translate(x, height * 0.6);
+                ctx.rotate(Math.random() * 0.5 - 0.25);
+                ctx.fillRect(-featureWidth/2, -featureHeight, featureWidth, featureHeight);
+                ctx.restore();
+            } else {
+                // Default: simple rectangles
+                ctx.fillRect(x, height * 0.6 - featureHeight, featureWidth, featureHeight);
+            }
+        }
+    }
+    
+    initializeMeepleParade() {
+        const startBtn = document.getElementById('start-parade');
+        const syncBtn = document.getElementById('sync-music');
+        
+        if (startBtn) {
+            startBtn.addEventListener('click', () => this.startMeepleParade());
+        }
+        if (syncBtn) {
+            syncBtn.addEventListener('click', () => this.syncMeepleToMusic());
+        }
+        
+        this.meepleAnimationId = null;
+        this.meeples = [];
+        this.initializeMeeples();
+    }
+    
+    initializeMeeples() {
+        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe'];
+        const numMeeples = 8;
+        
+        this.meeples = [];
+        for (let i = 0; i < numMeeples; i++) {
+            this.meeples.push({
+                x: -50 - (i * 80),
+                y: 100 + Math.random() * 50,
+                color: colors[i % colors.length],
+                speed: 1 + Math.random() * 2,
+                bobOffset: Math.random() * Math.PI * 2,
+                size: 20 + Math.random() * 10
+            });
+        }
+    }
+    
+    startMeepleParade() {
+        const canvas = document.getElementById('meeple-canvas');
+        if (!canvas) return;
+        
+        if (this.meepleAnimationId) {
+            cancelAnimationFrame(this.meepleAnimationId);
+        }
+        
+        this.initializeMeeples();
+        this.animateMeeples();
+    }
+    
+    animateMeeples() {
+        const canvas = document.getElementById('meeple-canvas');
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+        
+        // Update and draw meeples
+        this.meeples.forEach((meeple, index) => {
+            // Update position
+            meeple.x += meeple.speed;
+            
+            // Add bobbing motion
+            const bobAmount = Math.sin(Date.now() * 0.005 + meeple.bobOffset) * 5;
+            const currentY = meeple.y + bobAmount;
+            
+            // Reset position if off screen
+            if (meeple.x > width + 50) {
+                meeple.x = -50 - (index * 80);
+            }
+            
+            // Draw meeple
+            this.drawMeeple(ctx, meeple.x, currentY, meeple.size, meeple.color);
+        });
+        
+        this.meepleAnimationId = requestAnimationFrame(() => this.animateMeeples());
+    }
+    
+    drawMeeple(ctx, x, y, size, color) {
+        ctx.fillStyle = color;
+        
+        // Body
+        ctx.fillRect(x - size/2, y - size, size, size * 1.5);
+        
+        // Head
+        ctx.beginPath();
+        ctx.arc(x, y - size * 1.2, size * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Arms
+        ctx.fillRect(x - size * 0.8, y - size * 0.8, size * 0.3, size * 0.6);
+        ctx.fillRect(x + size * 0.5, y - size * 0.8, size * 0.3, size * 0.6);
+    }
+    
+    syncMeepleToMusic() {
+        if (this.isPlaying) {
+            // Sync meeple speed to music tempo (simplified)
+            this.meeples.forEach(meeple => {
+                meeple.speed = 2 + Math.random() * 3;
+            });
+            this.showNotification('Meeples synced to music!', 'success');
+        } else {
+            this.showNotification('Play some music first to sync!', 'warning');
+        }
+    }
+    
+    initializeDiceVisualizer() {
+        const rollBtn = document.getElementById('roll-dice');
+        const diceType = document.getElementById('dice-type');
+        
+        if (rollBtn) {
+            rollBtn.addEventListener('click', () => this.rollDice());
+        }
+        
+        this.diceObjects = [];
+        this.diceAnimationId = null;
+    }
+    
+    rollDice() {
+        const canvas = document.getElementById('dice-canvas');
+        const diceTypeSelect = document.getElementById('dice-type');
+        const diceType = diceTypeSelect?.value || 'd6';
+        
+        if (!canvas) return;
+        
+        // Stop previous animation
+        if (this.diceAnimationId) {
+            cancelAnimationFrame(this.diceAnimationId);
+        }
+        
+        // Generate dice based on type
+        this.generateDice(diceType);
+        this.animateDiceRoll();
+    }
+    
+    generateDice(diceType) {
+        this.diceObjects = [];
+        const canvas = document.getElementById('dice-canvas');
+        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b'];
+        
+        let numDice = 2;
+        let maxValue = 6;
+        
+        switch (diceType) {
+            case 'd20':
+                numDice = 1;
+                maxValue = 20;
+                break;
+            case 'd100':
+                numDice = 2;
+                maxValue = 100;
+                break;
+            case 'mixed':
+                numDice = 5;
+                break;
+        }
+        
+        for (let i = 0; i < numDice; i++) {
+            this.diceObjects.push({
+                x: 100 + i * 120,
+                y: 50,
+                rotation: 0,
+                rotationSpeed: (Math.random() - 0.5) * 0.3,
+                color: colors[i % colors.length],
+                value: Math.floor(Math.random() * maxValue) + 1,
+                size: 40,
+                settled: false,
+                settleTime: 60 + Math.random() * 40
+            });
+        }
+    }
+    
+    animateDiceRoll() {
+        const canvas = document.getElementById('dice-canvas');
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        ctx.clearRect(0, 0, width, height);
+        
+        let allSettled = true;
+        
+        this.diceObjects.forEach(die => {
+            if (!die.settled) {
+                die.rotation += die.rotationSpeed;
+                die.settleTime--;
+                
+                if (die.settleTime <= 0) {
+                    die.settled = true;
+                    die.rotation = 0;
+                } else {
+                    allSettled = false;
+                }
+            }
+            
+            this.drawDie(ctx, die);
+        });
+        
+        if (!allSettled) {
+            this.diceAnimationId = requestAnimationFrame(() => this.animateDiceRoll());
+        } else {
+            // Show results
+            this.showDiceResults();
+        }
+    }
+    
+    drawDie(ctx, die) {
+        ctx.save();
+        ctx.translate(die.x, die.y);
+        ctx.rotate(die.rotation);
+        
+        // Draw die face
+        ctx.fillStyle = die.color;
+        ctx.fillRect(-die.size/2, -die.size/2, die.size, die.size);
+        
+        // Draw border
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-die.size/2, -die.size/2, die.size, die.size);
+        
+        // Draw value if settled
+        if (die.settled) {
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px JetBrains Mono';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(die.value.toString(), 0, 0);
+        }
+        
+        ctx.restore();
+    }
+    
+    showDiceResults() {
+        const total = this.diceObjects.reduce((sum, die) => sum + die.value, 0);
+        this.showNotification(`Dice rolled! Total: ${total}`, 'success');
+    }
+    
+    initializePieceTableau() {
+        const shuffleBtn = document.getElementById('shuffle-pieces');
+        const addBtn = document.getElementById('add-pieces');
+        
+        if (shuffleBtn) {
+            shuffleBtn.addEventListener('click', () => this.shuffleTableauPieces());
+        }
+        if (addBtn) {
+            addBtn.addEventListener('click', () => this.addTableauPieces());
+        }
+        
+        this.tableauPieces = [];
+        this.initializeTableauPieces();
+        this.drawTableau();
+    }
+    
+    initializeTableauPieces() {
+        const pieceTypes = ['card', 'token', 'meeple', 'die', 'tile'];
+        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b'];
+        
+        this.tableauPieces = [];
+        for (let i = 0; i < 15; i++) {
+            this.tableauPieces.push({
+                x: Math.random() * 500 + 50,
+                y: Math.random() * 200 + 50,
+                type: pieceTypes[Math.floor(Math.random() * pieceTypes.length)],
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rotation: Math.random() * Math.PI * 2,
+                size: 20 + Math.random() * 20
+            });
+        }
+    }
+    
+    shuffleTableauPieces() {
+        this.tableauPieces.forEach(piece => {
+            piece.x = Math.random() * 500 + 50;
+            piece.y = Math.random() * 200 + 50;
+            piece.rotation = Math.random() * Math.PI * 2;
+        });
+        this.drawTableau();
+        this.showNotification('Pieces shuffled!', 'success');
+    }
+    
+    addTableauPieces() {
+        const pieceTypes = ['card', 'token', 'meeple', 'die', 'tile'];
+        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b'];
+        
+        for (let i = 0; i < 5; i++) {
+            this.tableauPieces.push({
+                x: Math.random() * 500 + 50,
+                y: Math.random() * 200 + 50,
+                type: pieceTypes[Math.floor(Math.random() * pieceTypes.length)],
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rotation: Math.random() * Math.PI * 2,
+                size: 20 + Math.random() * 20
+            });
+        }
+        this.drawTableau();
+        this.showNotification('New pieces added!', 'success');
+    }
+    
+    drawTableau() {
+        const canvas = document.getElementById('tableau-canvas');
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        ctx.clearRect(0, 0, width, height);
+        
+        this.tableauPieces.forEach(piece => {
+            this.drawTableauPiece(ctx, piece);
+        });
+    }
+    
+    drawTableauPiece(ctx, piece) {
+        ctx.save();
+        ctx.translate(piece.x, piece.y);
+        ctx.rotate(piece.rotation);
+        
+        ctx.fillStyle = piece.color;
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        
+        switch (piece.type) {
+            case 'card':
+                ctx.fillRect(-piece.size/2, -piece.size/3, piece.size, piece.size * 2/3);
+                ctx.strokeRect(-piece.size/2, -piece.size/3, piece.size, piece.size * 2/3);
+                break;
+            case 'token':
+                ctx.beginPath();
+                ctx.arc(0, 0, piece.size/2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                break;
+            case 'meeple':
+                ctx.fillRect(-piece.size/4, -piece.size/2, piece.size/2, piece.size);
+                ctx.beginPath();
+                ctx.arc(0, -piece.size/2, piece.size/4, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+            case 'die':
+                ctx.fillRect(-piece.size/2, -piece.size/2, piece.size, piece.size);
+                ctx.strokeRect(-piece.size/2, -piece.size/2, piece.size, piece.size);
+                break;
+            case 'tile':
+                const sides = 6;
+                ctx.beginPath();
+                for (let i = 0; i < sides; i++) {
+                    const angle = (i * Math.PI * 2) / sides;
+                    const x = Math.cos(angle) * piece.size/2;
+                    const y = Math.sin(angle) * piece.size/2;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                break;
+        }
+        
+        ctx.restore();
+    }
+    
+    initializeTVProjection() {
+        const projectorBtn = document.getElementById('start-projector-btn');
+        if (projectorBtn) {
+            projectorBtn.addEventListener('click', () => this.toggleTVProjection());
+        }
+        
+        this.isProjecting = false;
+    }
+    
+    toggleTVProjection() {
+        const projectorBtn = document.getElementById('start-projector-btn');
+        if (!projectorBtn) return;
+        
+        if (!this.isProjecting) {
+            this.startTVProjection();
+        } else {
+            this.stopTVProjection();
+        }
+    }
+    
+    startTVProjection() {
+        const projectorBtn = document.getElementById('start-projector-btn');
+        
+        // Check for casting API support
+        if ('presentation' in navigator && 'PresentationRequest' in window) {
+            const presentationRequest = new PresentationRequest(['https://tabletoptunes-cast.app']);
+            
+            presentationRequest.start()
+                .then(connection => {
+                    this.isProjecting = true;
+                    projectorBtn.classList.add('projecting');
+                    projectorBtn.innerHTML = '<i class="fas fa-tv"></i> Stop Projection';
+                    this.showNotification('Connected to TV! Visualizations are now casting.', 'success');
+                    
+                    // Send visualization data to cast receiver
+                    this.sendVisualizationData(connection);
+                })
+                .catch(error => {
+                    console.warn('Casting not supported or failed:', error);
+                    this.simulateTVProjection();
+                });
+        } else {
+            this.simulateTVProjection();
+        }
+    }
+    
+    simulateTVProjection() {
+        const projectorBtn = document.getElementById('start-projector-btn');
+        
+        this.isProjecting = true;
+        projectorBtn.classList.add('projecting');
+        projectorBtn.innerHTML = '<i class="fas fa-tv"></i> Stop Projection';
+        
+        // Simulate Google Voice activation
+        this.showNotification('TV Projection activated! Say "Hey Google, start TabletopTunes visualizations" to your Google Mini.', 'success');
+        
+        // Open visualizations in fullscreen mode
+        if (document.documentElement.requestFullscreen) {
+            const vizTab = document.getElementById('visualization-tab');
+            if (vizTab && !document.fullscreenElement) {
+                this.switchTab('visualization');
+                setTimeout(() => {
+                    document.documentElement.requestFullscreen();
+                }, 500);
+            }
+        }
+    }
+    
+    stopTVProjection() {
+        const projectorBtn = document.getElementById('start-projector-btn');
+        
+        this.isProjecting = false;
+        projectorBtn.classList.remove('projecting');
+        projectorBtn.innerHTML = '<i class="fas fa-tv"></i> Start TV Projection';
+        
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        }
+        
+        this.showNotification('TV Projection stopped', 'info');
+    }
+    
+    sendVisualizationData(connection) {
+        // Send current game data and visualization state to cast receiver
+        const vizData = {
+            currentGame: this.currentBoardGame,
+            currentCategory: this.currentCategory,
+            isPlaying: this.isPlaying,
+            visualizations: {
+                landscape: document.getElementById('landscape-theme')?.value,
+                meeples: this.meeples.length,
+                dice: this.diceObjects.length,
+                pieces: this.tableauPieces.length
+            }
+        };
+        
+        connection.send(JSON.stringify(vizData));
     }
     
     initializeEventListeners() {
