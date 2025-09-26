@@ -30,6 +30,9 @@ class TabletopTunes {
         // Track current game suggestions for playlist building
         this.currentGameSuggestions = null;
         
+        // Store pending game data until music is played
+        this.pendingGameData = null;
+        
         // Mock soundtrack data (in a real app, this would come from a server or local files)
         this.soundtracks = {
             ambient: [
@@ -988,6 +991,9 @@ class TabletopTunes {
     play() {
         if (this.currentPlaylist.length === 0) return;
         
+        // Save pending game data when music is actually played
+        this.savePendingGameToCloset();
+        
         // Since we don't have actual audio files, we'll simulate playback
         this.isPlaying = true;
         this.updatePlayButton();
@@ -1259,6 +1265,35 @@ class TabletopTunes {
         localStorage.setItem('tabletopTunes_savedGames', JSON.stringify(this.savedGames));
         
         this.showNotification(`"${gameName}" added to My Games!`);
+    }
+    
+    /**
+     * Save the currently pending game data when music is played for the first time
+     */
+    savePendingGameToCloset() {
+        if (this.pendingGameData && this.currentBoardGame) {
+            // Check if this game is already saved (to avoid duplicate saves)
+            if (!this.savedGames[this.pendingGameData.name]) {
+                // Save the pending game data
+                this.saveToGamesCloset(this.pendingGameData.name, {
+                    source: this.pendingGameData.source,
+                    bggData: this.pendingGameData.bggData,
+                    detectedCategory: this.pendingGameData.detectedCategory
+                });
+                
+                // Clear pending data
+                this.pendingGameData = null;
+                
+                // Show success message
+                this.showNotification(`Added "${this.currentBoardGame}" to My Games after playing music!`, 'success');
+            } else {
+                // Game already exists, just update play count
+                this.savedGames[this.pendingGameData.name].lastPlayed = new Date().toISOString();
+                this.savedGames[this.pendingGameData.name].playCount = (this.savedGames[this.pendingGameData.name].playCount || 0) + 1;
+                localStorage.setItem('tabletopTunes_savedGames', JSON.stringify(this.savedGames));
+                this.pendingGameData = null;
+            }
+        }
     }
     
     trackGamePlaylist(gameName, playlistName, playlistData) {
@@ -2351,7 +2386,7 @@ class TabletopTunes {
             // Display using the saved game data
             this.displayMyGameSuggestions(existingGame);
             
-            // Update play count
+            // Update play count only (don't create new entry)
             this.saveToGamesCloset(existingGame.name);
             
             return existingGame;
@@ -2368,8 +2403,9 @@ class TabletopTunes {
                 this.matchingMode = 'boardgame';
                 this.displayBGGGameSuggestions(bggGame);
                 
-                // Save to My Games with BGG's official name and data
-                this.saveToGamesCloset(officialName, { 
+                // Store game data temporarily for later saving when music is played
+                this.pendingGameData = {
+                    name: officialName,
                     source: 'boardgamegeek',
                     bggData: {
                         yearPublished: bggGame.yearPublished,
@@ -2385,9 +2421,9 @@ class TabletopTunes {
                         themes: bggGame.themes || [],
                         detectedCategory: bggGame.category
                     }
-                });
+                };
                 
-                this.showNotification(`Added "${officialName}" to My Games from BGG!`, 'success');
+                this.showNotification(`Found "${officialName}" on BGG! Play a soundtrack to add it to My Games.`, 'info');
                 return bggGame;
             }
         } catch (error) {
@@ -2398,11 +2434,12 @@ class TabletopTunes {
         this.showNotification('Game not found on BGG, using theme analysis...', 'info');
         const themeResult = this.suggestByTheme(gameName);
         if (themeResult) {
-            // Save theme-based matches to My Games too
-            this.saveToGamesCloset(gameName, { 
+            // Store theme-based game data temporarily for later saving when music is played
+            this.pendingGameData = {
+                name: gameName,
                 source: 'theme_analysis',
                 detectedCategory: themeResult.category 
-            });
+            };
         }
         
         return themeResult;
@@ -3159,6 +3196,9 @@ class TabletopTunes {
     playMovieTrack(movieName, trackName, trackIndex) {
         this.showNotification(`Playing "${trackName}" from ${movieName}`);
         
+        // Save pending game data when music is actually played
+        this.savePendingGameToCloset();
+        
         // Create a single track playlist
         this.currentPlaylist = [{
             name: trackName,
@@ -3178,6 +3218,9 @@ class TabletopTunes {
     loadBGGMovieSoundtrack(movieName, suggestionIndex, gameName) {
         // Load BGG movie soundtrack similar to regular movie soundtrack
         this.showNotification(`Loading ${movieName} soundtrack...`);
+        
+        // Save pending game data when music is actually played
+        this.savePendingGameToCloset();
         
         // Get the BGG game data from the current search
         if (this.currentBoardGame) {
@@ -3418,6 +3461,9 @@ class TabletopTunes {
      */
     playMovieTrack(movieTitle, trackName, trackIndex) {
         console.log(`Playing track: ${trackName} from ${movieTitle}`);
+        
+        // Save pending game data when music is actually played
+        this.savePendingGameToCloset();
         
         // For demo purposes, just show notification
         // In production, this would play the actual track
