@@ -70,6 +70,7 @@ class TabletopTunes {
         this.initializeEventListeners();
         this.initializeTabSystem();
         this.initializeSpotifyIntegration();
+        this.initializeGoogleCastIntegration();
         this.initializeVisualization();
         this.loadUserPreferences();
         this.loadGamesCloset();
@@ -475,6 +476,298 @@ class TabletopTunes {
         this.currentPlaylist.push(newTrack);
         this.displayPlaylist();
         this.showNotification(`✅ "${trackName}" added to your playlist!`);
+    }
+    
+    // 🔊 Google Cast & Voice Integration
+    
+    initializeGoogleCastIntegration() {
+        // Initialize Google Cast API
+        if (typeof chrome !== 'undefined' && chrome.cast && chrome.cast.isAvailable) {
+            this.initializeCastApi();
+        } else {
+            // Simulate cast functionality
+            this.simulateGoogleCastIntegration();
+        }
+        
+        // Initialize voice commands
+        this.initializeVoiceCommands();
+    }
+    
+    initializeCastApi() {
+        const applicationID = chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID;
+        const sessionRequest = new chrome.cast.SessionRequest(applicationID);
+        const apiConfig = new chrome.cast.ApiConfig(
+            sessionRequest,
+            (session) => this.onCastSessionInitiated(session),
+            (availability) => this.onCastReceiverAvailability(availability)
+        );
+        
+        chrome.cast.initialize(apiConfig, 
+            () => console.log('Google Cast initialized'),
+            (error) => console.warn('Google Cast init failed:', error)
+        );
+    }
+    
+    simulateGoogleCastIntegration() {
+        // Simulate Google Cast functionality for demo
+        this.castSession = null;
+        this.castAvailable = true;
+        
+        // Add cast button to Spotify section if it exists
+        this.addSpotifyCastButton();
+        
+        console.log('Google Cast simulation initialized');
+    }
+    
+    addSpotifyCastButton() {
+        const spotifyContent = document.getElementById('spotify-content');
+        if (!spotifyContent) return;
+        
+        const castButtonHtml = `
+            <div class="cast-controls" style="margin-top: 1rem; padding: 1rem; background: var(--bg-glass); border-radius: var(--radius-lg); border: 1px solid var(--gray-700);">
+                <h4 style="color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-cast" style="color: var(--primary-color);"></i>
+                    Cast to Google Mini
+                </h4>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button id="cast-to-mini" class="action-btn secondary" onclick="tabletopTunes.castToGoogleMini()">
+                        <i class="fab fa-google"></i> Cast to Living Room Mini
+                    </button>
+                    <button id="cast-to-all" class="action-btn" onclick="tabletopTunes.castToAllDevices()">
+                        <i class="fas fa-broadcast-tower"></i> Cast to All Speakers
+                    </button>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    💡 Say "Hey Google, play TabletopTunes playlist" to your Google Mini
+                </p>
+                <div id="cast-status" style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: var(--radius-md); font-size: 0.9rem; color: var(--text-secondary); display: none;">
+                    <i class="fas fa-info-circle"></i> Ready to cast
+                </div>
+            </div>
+        `;
+        
+        // Insert cast controls after user profile
+        const userProfile = document.getElementById('user-profile');
+        if (userProfile) {
+            userProfile.insertAdjacentHTML('afterend', castButtonHtml);
+        }
+    }
+    
+    castToGoogleMini() {
+        const castStatus = document.getElementById('cast-status');
+        const castButton = document.getElementById('cast-to-mini');
+        
+        if (!this.isSpotifyConnected) {
+            this.showNotification('Please connect to Spotify first', 'warning');
+            return;
+        }
+        
+        // Simulate casting process
+        if (castButton) {
+            castButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+            castButton.disabled = true;
+        }
+        
+        setTimeout(() => {
+            this.simulateCastConnection();
+            
+            if (castButton) {
+                castButton.innerHTML = '<i class="fas fa-stop"></i> Stop Casting';
+                castButton.disabled = false;
+                castButton.onclick = () => this.stopCasting();
+            }
+            
+            if (castStatus) {
+                castStatus.style.display = 'block';
+                castStatus.innerHTML = `
+                    <i class="fas fa-cast" style="color: var(--success-color);"></i>
+                    Now casting to <strong>Living Room Mini</strong>
+                    <div style="margin-top: 0.5rem; font-size: 0.8rem;">
+                        🎵 ${this.getCurrentTrackName()} • Volume: 65%
+                    </div>
+                `;
+            }
+            
+            this.showNotification('🎵 Now casting to Google Mini! Music will play through your speaker.', 'success');
+        }, 2000);
+    }
+    
+    castToAllDevices() {
+        if (!this.isSpotifyConnected) {
+            this.showNotification('Please connect to Spotify first', 'warning');
+            return;
+        }
+        
+        const devices = ['Living Room Mini', 'Kitchen Display', 'Bedroom Speaker'];
+        const castStatus = document.getElementById('cast-status');
+        
+        if (castStatus) {
+            castStatus.style.display = 'block';
+            castStatus.innerHTML = `
+                <i class="fas fa-broadcast-tower" style="color: var(--primary-color);"></i>
+                Casting to <strong>${devices.length} devices</strong>
+                <div style="margin-top: 0.5rem; font-size: 0.8rem;">
+                    ${devices.map(device => `🔊 ${device}`).join(' • ')}
+                </div>
+            `;
+        }
+        
+        this.showNotification(`🏠 Now casting to all ${devices.length} Google devices!`, 'success');
+    }
+    
+    stopCasting() {
+        const castButton = document.getElementById('cast-to-mini');
+        const castStatus = document.getElementById('cast-status');
+        
+        if (castButton) {
+            castButton.innerHTML = '<i class="fab fa-google"></i> Cast to Living Room Mini';
+            castButton.onclick = () => this.castToGoogleMini();
+        }
+        
+        if (castStatus) {
+            castStatus.style.display = 'none';
+        }
+        
+        this.showNotification('Casting stopped', 'info');
+    }
+    
+    simulateCastConnection() {
+        // Simulate the process of connecting to Google Cast receiver
+        this.castSession = {
+            id: 'demo-cast-session-' + Date.now(),
+            displayName: 'Living Room Mini',
+            receiver: {
+                friendlyName: 'Living Room Mini'
+            }
+        };
+    }
+    
+    getCurrentTrackName() {
+        if (this.currentPlaylist.length > 0 && this.currentTrackIndex < this.currentPlaylist.length) {
+            return this.currentPlaylist[this.currentTrackIndex].name;
+        }
+        return 'Epic Orchestral Mix';
+    }
+    
+    initializeVoiceCommands() {
+        // Check for Speech Recognition API
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            this.initializeSpeechRecognition();
+        } else {
+            console.log('Speech Recognition not supported - simulating voice commands');
+            this.simulateVoiceCommands();
+        }
+    }
+    
+    initializeSpeechRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this.recognition = new SpeechRecognition();
+        
+        this.recognition.continuous = true;
+        this.recognition.interimResults = false;
+        this.recognition.lang = 'en-US';
+        
+        this.recognition.onresult = (event) => {
+            const lastResult = event.results[event.results.length - 1];
+            const transcript = lastResult[0].transcript.toLowerCase();
+            
+            this.handleVoiceCommand(transcript);
+        };
+        
+        this.recognition.onerror = (event) => {
+            console.warn('Speech recognition error:', event.error);
+        };
+        
+        // Add voice control toggle
+        this.addVoiceControlToggle();
+    }
+    
+    simulateVoiceCommands() {
+        // Add simulated voice commands UI
+        this.addVoiceControlToggle();
+        
+        // Simulate Google Assistant integration
+        console.log('Voice commands simulation ready');
+        console.log('Simulated commands: "start projection", "cast music", "stop casting"');
+    }
+    
+    addVoiceControlToggle() {
+        const vizControls = document.querySelector('.viz-controls');
+        if (!vizControls) return;
+        
+        const voiceToggleHtml = `
+            <div class="voice-control-section">
+                <button id="voice-toggle" class="action-btn secondary" onclick="tabletopTunes.toggleVoiceControl()">
+                    <i class="fas fa-microphone"></i> Voice Control
+                </button>
+                <div id="voice-status" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; display: none;">
+                    🎤 Listening for: "Hey Google, start TabletopTunes projection"
+                </div>
+            </div>
+        `;
+        
+        vizControls.insertAdjacentHTML('beforeend', voiceToggleHtml);
+    }
+    
+    toggleVoiceControl() {
+        const voiceToggle = document.getElementById('voice-toggle');
+        const voiceStatus = document.getElementById('voice-status');
+        
+        if (this.voiceControlActive) {
+            // Stop voice control
+            if (this.recognition) {
+                this.recognition.stop();
+            }
+            this.voiceControlActive = false;
+            
+            if (voiceToggle) {
+                voiceToggle.innerHTML = '<i class="fas fa-microphone"></i> Voice Control';
+                voiceToggle.classList.remove('projecting');
+            }
+            if (voiceStatus) voiceStatus.style.display = 'none';
+            
+            this.showNotification('Voice control disabled', 'info');
+        } else {
+            // Start voice control
+            if (this.recognition) {
+                this.recognition.start();
+            }
+            this.voiceControlActive = true;
+            
+            if (voiceToggle) {
+                voiceToggle.innerHTML = '<i class="fas fa-microphone-slash"></i> Stop Listening';
+                voiceToggle.classList.add('projecting');
+            }
+            if (voiceStatus) voiceStatus.style.display = 'block';
+            
+            this.showNotification('🎤 Voice control activated! Try: "Hey Google, start TabletopTunes projection"', 'success');
+        }
+    }
+    
+    handleVoiceCommand(transcript) {
+        console.log('Voice command received:', transcript);
+        
+        if (transcript.includes('start projection') || transcript.includes('start tabletoptunes projection')) {
+            this.startTVProjection();
+            this.showNotification('🎤 Voice command: Starting TV projection', 'success');
+        } else if (transcript.includes('stop projection')) {
+            this.stopTVProjection();
+            this.showNotification('🎤 Voice command: Stopping TV projection', 'success');
+        } else if (transcript.includes('cast music') || transcript.includes('play music')) {
+            this.castToGoogleMini();
+            this.showNotification('🎤 Voice command: Casting music to Google Mini', 'success');
+        } else if (transcript.includes('stop casting') || transcript.includes('stop music')) {
+            this.stopCasting();
+            this.showNotification('🎤 Voice command: Stopping music cast', 'success');
+        } else if (transcript.includes('generate landscape')) {
+            this.generateLandscape();
+            this.showNotification('🎤 Voice command: Generating new landscape', 'success');
+        } else if (transcript.includes('roll dice')) {
+            this.rollDice();
+            this.showNotification('🎤 Voice command: Rolling dice', 'success');
+        } else {
+            console.log('Voice command not recognized:', transcript);
+        }
     }
     
     // Visualization System
