@@ -131,7 +131,8 @@ describe('BGG API Integration', () => {
             expect(suggestions[0]).toHaveProperty('movie');
             expect(suggestions[0]).toHaveProperty('reason');
             expect(suggestions[0]).toHaveProperty('tracks');
-            expect(suggestions[0].reason).toContain('Epic fantasy adventure'); // Use the actual reason from fallback suggestions
+            expect(suggestions[0].reason).toContain('Auto-generated suggestion based on BGG data');
+            expect(suggestions[0].reason).toContain('fantasy');
         });
     });
 

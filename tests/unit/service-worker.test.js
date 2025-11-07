@@ -3,36 +3,34 @@
  * Tests PWA caching, offline functionality, and service worker lifecycle
  */
 
-// Mock the service worker global scope
-global.self = {
-  addEventListener: jest.fn(),
-  skipWaiting: jest.fn(),
-  clients: {
-    claim: jest.fn()
-  }
-};
-
-global.caches = {
-  open: jest.fn(),
-  keys: jest.fn(),
-  delete: jest.fn(),
-  match: jest.fn()
-};
-
-global.fetch = jest.fn();
-
-// Mock console for service worker logs
-global.console = {
-  log: jest.fn(),
-  error: jest.fn()
-};
-
 describe('Service Worker', () => {
   let mockCache;
   let mockEvent;
 
   beforeEach(() => {
+    // Clear mocks first
     jest.clearAllMocks();
+    
+    // Mock the service worker global scope
+    // Note: global.self is set to window by jsdom, so we add properties to it
+    global.self.skipWaiting = jest.fn();
+    global.self.clients = {
+      claim: jest.fn()
+    };
+    global.self.addEventListener = jest.fn();
+
+    global.caches = {
+      open: jest.fn(),
+      keys: jest.fn(),
+      delete: jest.fn(),
+      match: jest.fn()
+    };
+
+    global.fetch = jest.fn();
+
+    // Mock console for service worker logs
+    global.console.log = jest.fn();
+    global.console.error = jest.fn();
     
     mockCache = {
       addAll: jest.fn(() => Promise.resolve()),
@@ -118,32 +116,36 @@ describe('Service Worker', () => {
       global.caches.keys.mockResolvedValue(['old-cache-v1', 'tabletop-tunes-v1.0.1']);
       global.caches.delete.mockResolvedValue(true);
 
+      let activatePromise;
       const activateHandler = jest.fn((event) => {
-        event.waitUntil(
-          global.caches.keys()
-            .then(cacheNames => {
-              return Promise.all(
-                cacheNames
-                  .filter(cacheName => cacheName !== 'tabletop-tunes-v1.0.1')
-                  .map(cacheName => global.caches.delete(cacheName))
-              );
-            })
-            .then(() => global.self.clients.claim())
-        );
+        activatePromise = global.caches.keys()
+          .then(cacheNames => {
+            return Promise.all(
+              cacheNames
+                .filter(cacheName => cacheName !== 'tabletop-tunes-v1.0.1')
+                .map(cacheName => global.caches.delete(cacheName))
+            );
+          })
+          .then(() => global.self.clients.claim());
+        event.waitUntil(activatePromise);
       });
 
       activateHandler(mockEvent);
+      await activatePromise;
 
       expect(mockEvent.waitUntil).toHaveBeenCalled();
       expect(global.self.clients.claim).toHaveBeenCalled();
     });
 
     test('should claim clients on activate', async () => {
+      let activatePromise;
       const activateHandler = jest.fn((event) => {
-        event.waitUntil(Promise.resolve().then(() => global.self.clients.claim()));
+        activatePromise = Promise.resolve().then(() => global.self.clients.claim());
+        event.waitUntil(activatePromise);
       });
 
       activateHandler(mockEvent);
+      await activatePromise;
 
       expect(global.self.clients.claim).toHaveBeenCalled();
     });

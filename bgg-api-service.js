@@ -365,7 +365,7 @@ class BGGApiService {
         if (typeof window !== 'undefined' && window.MOVIE_SOUNDTRACK_CATEGORIES) {
             const categoryData = window.MOVIE_SOUNDTRACK_CATEGORIES[category];
             if (categoryData && categoryData.movies) {
-                return categoryData.movies.slice(0, 3).map(movie => ({
+                return categoryData.movies.slice(0, 2).map(movie => ({
                     movie: movie,
                     reason: `Auto-generated suggestion based on BGG data: ${themes.join(', ')}`,
                     tracks: ['Main Theme', 'Adventure Begins', 'Epic Finale'] // Generic track names
