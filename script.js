@@ -5859,14 +5859,22 @@ class TabletopTunes {
 let tabletopTunes;
 
 // Track if Spotify SDK is ready
-let spotifySDKReady = false;
+window.spotifySDKReady = false;
 
 // Initialize Spotify Web Playback SDK when available
 window.onSpotifyWebPlaybackSDKReady = () => {
     console.log('Spotify SDK Ready');
-    spotifySDKReady = true;
-    if (window.tabletopTunes && typeof window.tabletopTunes.setupSpotifyPlayer === 'function') {
-        window.tabletopTunes.setupSpotifyPlayer();
+    window.spotifySDKReady = true;
+    
+    // Wait for TabletopTunes instance to be ready before setting up player
+    if (window.tabletopTunes) {
+        if (typeof window.tabletopTunes.setupSpotifyPlayer === 'function') {
+            window.tabletopTunes.setupSpotifyPlayer();
+        } else {
+            console.warn('TabletopTunes instance exists but setupSpotifyPlayer method not found');
+        }
+    } else {
+        console.log('TabletopTunes not yet initialized, will set up Spotify player when ready');
     }
 };
 

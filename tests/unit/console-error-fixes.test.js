@@ -16,8 +16,8 @@ describe('Console Error Fixes', () => {
 
     describe('Spotify SDK Callback', () => {
         test('should check for spotifySDKReady flag', () => {
-            expect(scriptContent).toContain('let spotifySDKReady = false');
-            expect(scriptContent).toContain('spotifySDKReady = true');
+            expect(scriptContent).toContain('window.spotifySDKReady = false');
+            expect(scriptContent).toContain('window.spotifySDKReady = true');
         });
 
         test('should check if setupSpotifyPlayer is a function before calling', () => {
