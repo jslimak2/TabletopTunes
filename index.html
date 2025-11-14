@@ -424,6 +424,53 @@
             <!-- How It Works Tab Content -->
             <div class="tab-content" id="how-it-works-tab">
                 <div class="how-it-works-section">
+                    <!-- ML/NLP Configuration Section -->
+                    <div class="ml-config-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 12px; margin-bottom: 2rem; color: white;">
+                        <h2 style="color: white; margin-bottom: 1rem;"><i class="fas fa-brain"></i> ML/NLP Matching Configuration</h2>
+                        <p style="margin-bottom: 1.5rem; opacity: 0.95;">Enable advanced machine learning and natural language processing for intelligent game-to-movie matching. This uses real-time data from The Movie Database (TMDB) to analyze board game descriptions and find the perfect soundtrack matches.</p>
+                        
+                        <div class="api-config-card" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
+                            <h3 style="color: white; font-size: 1.1rem; margin-bottom: 1rem;"><i class="fas fa-key"></i> TMDB API Configuration</h3>
+                            <p style="opacity: 0.9; font-size: 0.9rem; margin-bottom: 1rem;">Get your free API key from <a href="https://www.themoviedb.org/settings/api" target="_blank" style="color: #ffd700; text-decoration: underline;">TMDB API Settings</a></p>
+                            
+                            <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
+                                <div style="flex: 1;">
+                                    <label for="tmdb-api-key-input" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">API Key:</label>
+                                    <input type="text" id="tmdb-api-key-input" placeholder="Enter your TMDB API key" style="width: 100%; padding: 0.75rem; border-radius: 6px; border: none; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;">
+                                </div>
+                                <button id="save-tmdb-key-btn" style="padding: 0.75rem 1.5rem; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: all 0.3s;">
+                                    <i class="fas fa-save"></i> Save Key
+                                </button>
+                                <button id="test-tmdb-key-btn" style="padding: 0.75rem 1.5rem; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: all 0.3s;">
+                                    <i class="fas fa-flask"></i> Test
+                                </button>
+                            </div>
+                            
+                            <div id="tmdb-key-status" style="padding: 0.75rem; background: rgba(255,255,255,0.1); border-radius: 6px; font-size: 0.9rem; display: none;">
+                                <span id="tmdb-key-status-text"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="ml-features" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+                            <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px;">
+                                <h4 style="color: white; margin-bottom: 0.5rem; font-size: 1rem;"><i class="fas fa-robot"></i> NLP Analysis</h4>
+                                <p style="opacity: 0.9; font-size: 0.85rem;">Analyzes game descriptions using natural language processing</p>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px;">
+                                <h4 style="color: white; margin-bottom: 0.5rem; font-size: 1rem;"><i class="fas fa-chart-line"></i> Semantic Matching</h4>
+                                <p style="opacity: 0.9; font-size: 0.85rem;">Finds thematic connections between games and movies</p>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px;">
+                                <h4 style="color: white; margin-bottom: 0.5rem; font-size: 1rem;"><i class="fas fa-database"></i> Real-time Data</h4>
+                                <p style="opacity: 0.9; font-size: 0.85rem;">Uses live TMDB data for accurate movie information</p>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px;">
+                                <h4 style="color: white; margin-bottom: 0.5rem; font-size: 1rem;"><i class="fas fa-percentage"></i> Confidence Scores</h4>
+                                <p style="opacity: 0.9; font-size: 0.85rem;">Shows match confidence with detailed reasoning</p>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <h2><i class="fas fa-cog"></i> How TabletopTunes Works</h2>
                     <p class="section-intro">TabletopTunes uses advanced AI-powered analysis to match your board games with the perfect cinematic soundscapes. Here's the detailed breakdown of our recommendation engine:</p>
                     
@@ -855,10 +902,88 @@
     </div>
     
     <script src="game-soundtrack-data.js"></script>
+    <script src="ml-matching-service.js"></script>
     <script src="bgg-api-service.js"></script>
     <script src="movie-api-service.js"></script>
     <script src="script.js?v=20241228b"></script>
     <script>
+        // TMDB API Key Configuration
+        document.addEventListener('DOMContentLoaded', () => {
+            const saveTMDBKeyBtn = document.getElementById('save-tmdb-key-btn');
+            const testTMDBKeyBtn = document.getElementById('test-tmdb-key-btn');
+            const tmdbKeyInput = document.getElementById('tmdb-api-key-input');
+            const tmdbKeyStatus = document.getElementById('tmdb-key-status');
+            const tmdbKeyStatusText = document.getElementById('tmdb-key-status-text');
+            
+            // Load saved API key
+            const savedKey = localStorage.getItem('tmdb_api_key');
+            if (savedKey && savedKey !== 'demo_key') {
+                tmdbKeyInput.value = savedKey;
+                showStatus('✓ API key loaded from storage', 'success');
+            }
+            
+            // Save API key
+            if (saveTMDBKeyBtn) {
+                saveTMDBKeyBtn.addEventListener('click', () => {
+                    const apiKey = tmdbKeyInput.value.trim();
+                    if (apiKey) {
+                        localStorage.setItem('tmdb_api_key', apiKey);
+                        if (window.tabletopTunes && window.tabletopTunes.movieService) {
+                            window.tabletopTunes.movieService.setApiKey(apiKey);
+                        }
+                        showStatus('✓ API key saved successfully! ML matching now enabled.', 'success');
+                    } else {
+                        showStatus('⚠ Please enter a valid API key', 'warning');
+                    }
+                });
+            }
+            
+            // Test API key
+            if (testTMDBKeyBtn) {
+                testTMDBKeyBtn.addEventListener('click', async () => {
+                    const apiKey = tmdbKeyInput.value.trim();
+                    if (!apiKey) {
+                        showStatus('⚠ Please enter an API key first', 'warning');
+                        return;
+                    }
+                    
+                    showStatus('⏳ Testing API connection...', 'info');
+                    
+                    try {
+                        const response = await fetch(`https://api.themoviedb.org/3/movie/550?api_key=${apiKey}`);
+                        if (response.ok) {
+                            showStatus('✓ API key is valid! ML matching enabled.', 'success');
+                            localStorage.setItem('tmdb_api_key', apiKey);
+                            if (window.tabletopTunes && window.tabletopTunes.movieService) {
+                                window.tabletopTunes.movieService.setApiKey(apiKey);
+                            }
+                        } else {
+                            showStatus('✗ Invalid API key. Please check and try again.', 'error');
+                        }
+                    } catch (error) {
+                        showStatus('✗ Connection error. Please check your internet connection.', 'error');
+                    }
+                });
+            }
+            
+            function showStatus(message, type) {
+                if (tmdbKeyStatus && tmdbKeyStatusText) {
+                    tmdbKeyStatusText.textContent = message;
+                    tmdbKeyStatus.style.display = 'block';
+                    
+                    // Set color based on type
+                    const colors = {
+                        success: '#4CAF50',
+                        warning: '#FF9800',
+                        error: '#f44336',
+                        info: '#2196F3'
+                    };
+                    tmdbKeyStatus.style.backgroundColor = `${colors[type]}33`;
+                    tmdbKeyStatus.style.borderLeft = `4px solid ${colors[type]}`;
+                }
+            }
+        });
+        
         // Safe function to call tabletopTunes methods with error handling
         function safeCall(methodName, ...args) {
             if (window.tabletopTunes && typeof window.tabletopTunes[methodName] === 'function') {

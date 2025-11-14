@@ -355,12 +355,42 @@ class BGGApiService {
 
     /**
      * Generate soundtrack suggestions based on themes and category
+     * Now supports ML/NLP-based matching when ML service is available
      * @param {Array} themes - Game themes
      * @param {string} category - Game category
      * @param {Object} gameDetails - Full game details
      * @returns {Array} Array of soundtrack suggestions
      */
-    generateSoundtrackSuggestions(themes, category, gameDetails) {
+    async generateSoundtrackSuggestions(themes, category, gameDetails) {
+        // Check if ML matching service is available
+        if (typeof window !== 'undefined' && window.MLMatchingService && window.MovieApiService) {
+            try {
+                const mlService = new window.MLMatchingService();
+                const movieService = new window.MovieApiService();
+                
+                // Build movie database
+                const movieDatabase = await movieService.buildMovieDatabase();
+                
+                // Use ML matching
+                const matches = await mlService.matchGameToMovies(gameDetails, movieDatabase);
+                
+                if (matches && matches.length > 0) {
+                    return matches.slice(0, 3).map(match => ({
+                        movie: match.movie.title,
+                        reason: match.matchReasons.join('. '),
+                        tracks: this.generateTrackListForMovie(match.movie),
+                        score: match.score,
+                        year: match.movie.year,
+                        composer: match.movie.composer,
+                        mlGenerated: true
+                    }));
+                }
+            } catch (error) {
+                console.warn('ML matching failed, falling back to rule-based:', error);
+            }
+        }
+        
+        // Fallback to existing rule-based matching
         // Use the existing movie soundtrack categories mapping
         if (typeof window !== 'undefined' && window.MOVIE_SOUNDTRACK_CATEGORIES) {
             const categoryData = window.MOVIE_SOUNDTRACK_CATEGORIES[category];
@@ -368,7 +398,8 @@ class BGGApiService {
                 return categoryData.movies.slice(0, 2).map(movie => ({
                     movie: movie,
                     reason: `Auto-generated suggestion based on BGG data: ${themes.join(', ')}`,
-                    tracks: ['Main Theme', 'Adventure Begins', 'Epic Finale'] // Generic track names
+                    tracks: ['Main Theme', 'Adventure Begins', 'Epic Finale'], // Generic track names
+                    mlGenerated: false
                 }));
             }
         }
@@ -393,6 +424,30 @@ class BGGApiService {
         };
 
         return fallbackSuggestions[category] || fallbackSuggestions.default;
+    }
+    
+    /**
+     * Generate a track list for a movie based on its genre and mood
+     * @param {Object} movie - Movie data
+     * @returns {Array} Array of track names
+     */
+    generateTrackListForMovie(movie) {
+        const genres = movie.genres ? movie.genres.map(g => g.name || g) : [];
+        
+        // Genre-specific track templates
+        if (genres.includes('Fantasy')) {
+            return ['Main Theme', 'The Journey Begins', 'Magic and Wonder', 'Epic Battle', 'Triumphant Return'];
+        } else if (genres.includes('Science Fiction')) {
+            return ['Opening Titles', 'Space Theme', 'Technology', 'Alien Encounter', 'Final Frontier'];
+        } else if (genres.includes('Horror')) {
+            return ['Ominous Opening', 'Building Tension', 'The Terror', 'Chase Theme', 'Final Confrontation'];
+        } else if (genres.includes('Adventure')) {
+            return ['Adventure Theme', 'The Quest', 'Discovery', 'Action Sequence', 'Victory'];
+        } else if (genres.includes('War')) {
+            return ['March Theme', 'Before Battle', 'Combat', 'Sacrifice', 'After War'];
+        } else {
+            return ['Main Theme', 'Character Theme', 'Action Theme', 'Emotional Theme', 'Finale'];
+        }
     }
 
     /**

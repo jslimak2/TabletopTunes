@@ -6,13 +6,71 @@
 
 class MovieApiService {
     constructor() {
-        // Using a demo API key - in production, this should be environment-based
-        // TMDB provides a free tier for personal/educational projects
-        this.apiKey = 'demo_key'; // Replace with actual API key
+        // TMDB API key - can be set via environment variable or config
+        // Get free API key from https://www.themoviedb.org/settings/api
+        this.apiKey = this.getApiKey();
         this.baseUrl = 'https://api.themoviedb.org/3';
         this.cache = new Map();
         this.rateLimitDelay = 250; // 4 requests per second limit
         this.lastRequestTime = 0;
+        this.useMockData = !this.apiKey || this.apiKey === 'demo_key';
+        
+        // Genre ID mapping from TMDB
+        this.genreMap = {
+            28: 'Action',
+            12: 'Adventure',
+            16: 'Animation',
+            35: 'Comedy',
+            80: 'Crime',
+            99: 'Documentary',
+            18: 'Drama',
+            10751: 'Family',
+            14: 'Fantasy',
+            36: 'History',
+            27: 'Horror',
+            10402: 'Music',
+            9648: 'Mystery',
+            10749: 'Romance',
+            878: 'Science Fiction',
+            10770: 'TV Movie',
+            53: 'Thriller',
+            10752: 'War',
+            37: 'Western'
+        };
+    }
+    
+    /**
+     * Get API key from various sources
+     * @returns {string} API key or demo key
+     */
+    getApiKey() {
+        // Check environment variable (for Node.js backend)
+        if (typeof process !== 'undefined' && process.env && process.env.TMDB_API_KEY) {
+            return process.env.TMDB_API_KEY;
+        }
+        
+        // Check localStorage (for browser)
+        if (typeof localStorage !== 'undefined') {
+            const storedKey = localStorage.getItem('tmdb_api_key');
+            if (storedKey) return storedKey;
+        }
+        
+        // Default demo key (will use mock data)
+        return 'demo_key';
+    }
+    
+    /**
+     * Set API key dynamically
+     * @param {string} apiKey - TMDB API key
+     */
+    setApiKey(apiKey) {
+        this.apiKey = apiKey;
+        this.useMockData = !apiKey || apiKey === 'demo_key';
+        
+        // Store in localStorage if available
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('tmdb_api_key', apiKey);
+        }
     }
 
     /**
@@ -43,15 +101,43 @@ class MovieApiService {
             return this.cache.get(cacheKey);
         }
 
-        // For demo purposes, return mock data based on common soundtrack movies
-        // In production, this would make actual API calls
-        const mockResults = this.getMockMovieResults(query);
+        // Use real API if available, otherwise fall back to mock data
+        let results;
+        if (this.useMockData) {
+            results = this.getMockMovieResults(query);
+        } else {
+            try {
+                await this.respectRateLimit();
+                
+                const url = `${this.baseUrl}/search/movie?api_key=${this.apiKey}&query=${encodeURIComponent(query)}&include_adult=false`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`TMDB API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                results = data.results.map(movie => ({
+                    id: movie.id,
+                    title: movie.title,
+                    year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
+                    overview: movie.overview,
+                    genres: movie.genre_ids.map(id => this.genreMap[id]).filter(Boolean),
+                    popularity: movie.popularity,
+                    voteAverage: movie.vote_average,
+                    posterPath: movie.poster_path
+                }));
+            } catch (error) {
+                console.warn('TMDB API call failed, using mock data:', error);
+                results = this.getMockMovieResults(query);
+            }
+        }
         
         // Cache results for 1 hour
-        this.cache.set(cacheKey, mockResults);
+        this.cache.set(cacheKey, results);
         setTimeout(() => this.cache.delete(cacheKey), 60 * 60 * 1000);
         
-        return mockResults;
+        return results;
     }
 
     /**
@@ -66,8 +152,43 @@ class MovieApiService {
             return this.cache.get(cacheKey);
         }
 
-        // Mock detailed movie data
-        const movieDetails = this.getMockMovieDetails(movieId);
+        let movieDetails;
+        if (this.useMockData) {
+            movieDetails = this.getMockMovieDetails(movieId);
+        } else {
+            try {
+                await this.respectRateLimit();
+                
+                const url = `${this.baseUrl}/movie/${movieId}?api_key=${this.apiKey}&append_to_response=keywords,credits`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`TMDB API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                movieDetails = {
+                    id: data.id,
+                    title: data.title,
+                    year: data.release_date ? new Date(data.release_date).getFullYear() : null,
+                    genre: data.genres.map(g => g.name).join(', '),
+                    genres: data.genres.map(g => ({ id: g.id, name: g.name })),
+                    overview: data.overview,
+                    tagline: data.tagline,
+                    runtime: data.runtime,
+                    composer: this.extractComposer(data.credits),
+                    description: data.overview,
+                    popularity: data.popularity,
+                    voteAverage: data.vote_average,
+                    keywords: data.keywords ? data.keywords.keywords.map(k => k.name) : [],
+                    posterPath: data.poster_path,
+                    backdropPath: data.backdrop_path
+                };
+            } catch (error) {
+                console.warn('TMDB API call failed, using mock data:', error);
+                movieDetails = this.getMockMovieDetails(movieId);
+            }
+        }
         
         if (movieDetails) {
             this.cache.set(cacheKey, movieDetails);
@@ -75,6 +196,23 @@ class MovieApiService {
         }
         
         return movieDetails;
+    }
+    
+    /**
+     * Extract composer from movie credits
+     * @param {Object} credits - Movie credits data
+     * @returns {string} Composer name or 'Various Artists'
+     */
+    extractComposer(credits) {
+        if (!credits || !credits.crew) return 'Various Artists';
+        
+        const composer = credits.crew.find(person => 
+            person.job === 'Original Music Composer' || 
+            person.job === 'Music' ||
+            person.department === 'Sound'
+        );
+        
+        return composer ? composer.name : 'Various Artists';
     }
 
     /**
@@ -111,7 +249,49 @@ class MovieApiService {
             return this.cache.get(cacheKey);
         }
 
-        const genreMovies = this.getMockGenreMovies(genre);
+        let genreMovies;
+        if (this.useMockData) {
+            genreMovies = this.getMockGenreMovies(genre);
+        } else {
+            try {
+                // Map genre names to TMDB genre IDs
+                const genreIdMap = {
+                    'fantasy': 14,
+                    'scifi': 878,
+                    'horror': 27,
+                    'adventure': 12,
+                    'mystery': 9648,
+                    'war': 10752,
+                    'action': 28
+                };
+                
+                const genreId = genreIdMap[genre.toLowerCase()];
+                if (!genreId) {
+                    genreMovies = this.getMockGenreMovies(genre);
+                } else {
+                    await this.respectRateLimit();
+                    
+                    const url = `${this.baseUrl}/discover/movie?api_key=${this.apiKey}&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=100`;
+                    const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        throw new Error(`TMDB API error: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    genreMovies = data.results.slice(0, 20).map(movie => ({
+                        id: movie.id,
+                        title: movie.title,
+                        year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
+                        overview: movie.overview,
+                        popularity: movie.popularity
+                    }));
+                }
+            } catch (error) {
+                console.warn('TMDB API call failed, using mock data:', error);
+                genreMovies = this.getMockGenreMovies(genre);
+            }
+        }
         
         this.cache.set(cacheKey, genreMovies);
         setTimeout(() => this.cache.delete(cacheKey), 60 * 60 * 1000);
@@ -374,6 +554,102 @@ class MovieApiService {
             enhanced: true,
             lastUpdated: new Date().toISOString()
         };
+    }
+    
+    /**
+     * Build comprehensive movie database for ML matching
+     * Fetches popular movies across multiple genres suitable for soundtracks
+     * @returns {Promise<Array>} Array of movies with full details
+     */
+    async buildMovieDatabase() {
+        const cacheKey = 'movie_database_full';
+        
+        if (this.cache.has(cacheKey)) {
+            return this.cache.get(cacheKey);
+        }
+        
+        const genres = ['fantasy', 'scifi', 'horror', 'adventure', 'mystery', 'war', 'action'];
+        const allMovies = [];
+        const seenIds = new Set();
+        
+        try {
+            // Fetch movies for each genre
+            for (const genre of genres) {
+                const genreMovies = await this.getMoviesByGenre(genre);
+                
+                // Get full details for each movie
+                for (const movie of genreMovies.slice(0, 10)) { // Limit to top 10 per genre
+                    if (!seenIds.has(movie.id)) {
+                        seenIds.add(movie.id);
+                        
+                        try {
+                            const details = await this.getMovieDetails(movie.id);
+                            if (details) {
+                                allMovies.push(details);
+                            }
+                        } catch (error) {
+                            console.warn(`Failed to get details for movie ${movie.id}:`, error);
+                        }
+                    }
+                }
+            }
+            
+            // Cache the database for 24 hours
+            this.cache.set(cacheKey, allMovies);
+            setTimeout(() => this.cache.delete(cacheKey), 24 * 60 * 60 * 1000);
+            
+            return allMovies;
+        } catch (error) {
+            console.error('Failed to build movie database:', error);
+            return this.getMockMovieDatabase();
+        }
+    }
+    
+    /**
+     * Get a mock movie database for offline/demo use
+     * @returns {Array} Mock movie database
+     */
+    getMockMovieDatabase() {
+        return [
+            {
+                id: 120,
+                title: 'The Lord of the Rings: The Fellowship of the Ring',
+                year: 2001,
+                genres: [{ name: 'Fantasy' }, { name: 'Adventure' }],
+                overview: 'A meek Hobbit from the Shire and eight companions set out on a journey to destroy the powerful One Ring and save Middle-earth from the Dark Lord Sauron.',
+                tagline: 'One ring to rule them all',
+                composer: 'Howard Shore',
+                keywords: ['fantasy', 'ring', 'fellowship', 'hobbit', 'quest', 'epic']
+            },
+            {
+                id: 11,
+                title: 'Star Wars',
+                year: 1977,
+                genres: [{ name: 'Science Fiction' }, { name: 'Adventure' }],
+                overview: 'Luke Skywalker joins forces with a Jedi Knight, a cocky pilot, a Wookiee and two droids to save the galaxy from the Empire\'s world-destroying battle station.',
+                tagline: 'A long time ago in a galaxy far, far away...',
+                composer: 'John Williams',
+                keywords: ['space', 'rebellion', 'force', 'empire', 'hero']
+            },
+            {
+                id: 27205,
+                title: 'Inception',
+                year: 2010,
+                genres: [{ name: 'Science Fiction' }, { name: 'Thriller' }],
+                overview: 'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.',
+                tagline: 'Your mind is the scene of the crime',
+                composer: 'Hans Zimmer',
+                keywords: ['dreams', 'heist', 'reality', 'mind', 'thriller']
+            },
+            // Add more mock entries as needed
+        ];
+    }
+    
+    /**
+     * Clear all cached data
+     */
+    clearCache() {
+        this.cache.clear();
     }
 }
 

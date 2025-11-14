@@ -120,12 +120,12 @@ describe('BGG API Integration', () => {
     });
 
     describe('Soundtrack Generation', () => {
-        test('should generate appropriate soundtrack suggestions', () => {
+        test('should generate appropriate soundtrack suggestions', async () => {
             const themes = ['fantasy', 'adventure'];
             const category = 'fantasy';
             const gameDetails = { name: 'Test Game' };
 
-            const suggestions = bggService.generateSoundtrackSuggestions(themes, category, gameDetails);
+            const suggestions = await bggService.generateSoundtrackSuggestions(themes, category, gameDetails);
 
             expect(suggestions).toHaveLength(2);
             expect(suggestions[0]).toHaveProperty('movie');
