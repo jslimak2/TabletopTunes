@@ -657,7 +657,7 @@ class TabletopTunes {
                                     onmouseout="this.style.background='var(--bg-card)'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--gray-600)'">
                                 <i class="fas fa-play"></i>
                             </button>
-                            <button onclick="event.stopPropagation(); window.tabletopTunes.addSpotifyTrack('${track.id}', '${track.name.replace(/'/g, "\\'")}', '${track.artist.replace(/'/g, "\\'")}')" 
+                            <button onclick="event.stopPropagation(); window.tabletopTunes.addSpotifyTrack('${track.id}', '${track.name.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}', '${track.artist.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}')" 
                                     style="padding: 0.5rem 1rem; background: var(--spotify-green); border: none; border-radius: var(--radius-sm); color: white; cursor: pointer; font-weight: 500; transition: all 0.2s ease;"
                                     onmouseover="this.style.background='#1db954'; this.style.transform='translateY(-1px)'"
                                     onmouseout="this.style.background='var(--spotify-green)'; this.style.transform='translateY(0)'">
