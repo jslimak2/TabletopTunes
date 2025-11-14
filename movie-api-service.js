@@ -101,37 +101,31 @@ class MovieApiService {
             return this.cache.get(cacheKey);
         }
 
-        // Use real API if available, otherwise fall back to mock data
-        let results;
+        // Require valid API key - no mock data fallback
         if (this.useMockData) {
-            results = this.getMockMovieResults(query);
-        } else {
-            try {
-                await this.respectRateLimit();
-                
-                const url = `${this.baseUrl}/search/movie?api_key=${this.apiKey}&query=${encodeURIComponent(query)}&include_adult=false`;
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`TMDB API error: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                results = data.results.map(movie => ({
-                    id: movie.id,
-                    title: movie.title,
-                    year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
-                    overview: movie.overview,
-                    genres: movie.genre_ids.map(id => this.genreMap[id]).filter(Boolean),
-                    popularity: movie.popularity,
-                    voteAverage: movie.vote_average,
-                    posterPath: movie.poster_path
-                }));
-            } catch (error) {
-                console.warn('TMDB API call failed, using mock data:', error);
-                results = this.getMockMovieResults(query);
-            }
+            throw new Error('TMDB API key required. Please configure your API key in the "How It Works" tab.');
         }
+        
+        await this.respectRateLimit();
+        
+        const url = `${this.baseUrl}/search/movie?api_key=${this.apiKey}&query=${encodeURIComponent(query)}&include_adult=false`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`TMDB API error: ${response.status} - ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const results = data.results.map(movie => ({
+            id: movie.id,
+            title: movie.title,
+            year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
+            overview: movie.overview,
+            genres: movie.genre_ids.map(id => this.genreMap[id]).filter(Boolean),
+            popularity: movie.popularity,
+            voteAverage: movie.vote_average,
+            posterPath: movie.poster_path
+        }));
         
         // Cache results for 1 hour
         this.cache.set(cacheKey, results);
@@ -152,48 +146,41 @@ class MovieApiService {
             return this.cache.get(cacheKey);
         }
 
-        let movieDetails;
+        // Require valid API key - no mock data fallback
         if (this.useMockData) {
-            movieDetails = this.getMockMovieDetails(movieId);
-        } else {
-            try {
-                await this.respectRateLimit();
-                
-                const url = `${this.baseUrl}/movie/${movieId}?api_key=${this.apiKey}&append_to_response=keywords,credits`;
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`TMDB API error: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                movieDetails = {
-                    id: data.id,
-                    title: data.title,
-                    year: data.release_date ? new Date(data.release_date).getFullYear() : null,
-                    genre: data.genres.map(g => g.name).join(', '),
-                    genres: data.genres.map(g => ({ id: g.id, name: g.name })),
-                    overview: data.overview,
-                    tagline: data.tagline,
-                    runtime: data.runtime,
-                    composer: this.extractComposer(data.credits),
-                    description: data.overview,
-                    popularity: data.popularity,
-                    voteAverage: data.vote_average,
-                    keywords: data.keywords ? data.keywords.keywords.map(k => k.name) : [],
-                    posterPath: data.poster_path,
-                    backdropPath: data.backdrop_path
-                };
-            } catch (error) {
-                console.warn('TMDB API call failed, using mock data:', error);
-                movieDetails = this.getMockMovieDetails(movieId);
-            }
+            throw new Error('TMDB API key required. Please configure your API key in the "How It Works" tab.');
         }
         
-        if (movieDetails) {
-            this.cache.set(cacheKey, movieDetails);
-            setTimeout(() => this.cache.delete(cacheKey), 60 * 60 * 1000);
+        await this.respectRateLimit();
+        
+        const url = `${this.baseUrl}/movie/${movieId}?api_key=${this.apiKey}&append_to_response=keywords,credits`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`TMDB API error: ${response.status} - ${response.statusText}`);
         }
+        
+        const data = await response.json();
+        const movieDetails = {
+            id: data.id,
+            title: data.title,
+            year: data.release_date ? new Date(data.release_date).getFullYear() : null,
+            genre: data.genres.map(g => g.name).join(', '),
+            genres: data.genres.map(g => ({ id: g.id, name: g.name })),
+            overview: data.overview,
+            tagline: data.tagline,
+            runtime: data.runtime,
+            composer: this.extractComposer(data.credits),
+            description: data.overview,
+            popularity: data.popularity,
+            voteAverage: data.vote_average,
+            keywords: data.keywords ? data.keywords.keywords.map(k => k.name) : [],
+            posterPath: data.poster_path,
+            backdropPath: data.backdrop_path
+        };
+        
+        this.cache.set(cacheKey, movieDetails);
+        setTimeout(() => this.cache.delete(cacheKey), 60 * 60 * 1000);
         
         return movieDetails;
     }
@@ -249,49 +236,44 @@ class MovieApiService {
             return this.cache.get(cacheKey);
         }
 
-        let genreMovies;
+        // Require valid API key - no mock data fallback
         if (this.useMockData) {
-            genreMovies = this.getMockGenreMovies(genre);
-        } else {
-            try {
-                // Map genre names to TMDB genre IDs
-                const genreIdMap = {
-                    'fantasy': 14,
-                    'scifi': 878,
-                    'horror': 27,
-                    'adventure': 12,
-                    'mystery': 9648,
-                    'war': 10752,
-                    'action': 28
-                };
-                
-                const genreId = genreIdMap[genre.toLowerCase()];
-                if (!genreId) {
-                    genreMovies = this.getMockGenreMovies(genre);
-                } else {
-                    await this.respectRateLimit();
-                    
-                    const url = `${this.baseUrl}/discover/movie?api_key=${this.apiKey}&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=100`;
-                    const response = await fetch(url);
-                    
-                    if (!response.ok) {
-                        throw new Error(`TMDB API error: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    genreMovies = data.results.slice(0, 20).map(movie => ({
-                        id: movie.id,
-                        title: movie.title,
-                        year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
-                        overview: movie.overview,
-                        popularity: movie.popularity
-                    }));
-                }
-            } catch (error) {
-                console.warn('TMDB API call failed, using mock data:', error);
-                genreMovies = this.getMockGenreMovies(genre);
-            }
+            throw new Error('TMDB API key required. Please configure your API key in the "How It Works" tab.');
         }
+        
+        // Map genre names to TMDB genre IDs
+        const genreIdMap = {
+            'fantasy': 14,
+            'scifi': 878,
+            'horror': 27,
+            'adventure': 12,
+            'mystery': 9648,
+            'war': 10752,
+            'action': 28
+        };
+        
+        const genreId = genreIdMap[genre.toLowerCase()];
+        if (!genreId) {
+            throw new Error(`Unknown genre: ${genre}. Supported genres: ${Object.keys(genreIdMap).join(', ')}`);
+        }
+        
+        await this.respectRateLimit();
+        
+        const url = `${this.baseUrl}/discover/movie?api_key=${this.apiKey}&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=100`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`TMDB API error: ${response.status} - ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const genreMovies = data.results.slice(0, 20).map(movie => ({
+            id: movie.id,
+            title: movie.title,
+            year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
+            overview: movie.overview,
+            popularity: movie.popularity
+        }));
         
         this.cache.set(cacheKey, genreMovies);
         setTimeout(() => this.cache.delete(cacheKey), 60 * 60 * 1000);
@@ -568,41 +550,42 @@ class MovieApiService {
             return this.cache.get(cacheKey);
         }
         
+        // Require valid API key - no mock data fallback
+        if (this.useMockData) {
+            throw new Error('TMDB API key required. Please configure your API key in the "How It Works" tab to enable ML matching.');
+        }
+        
         const genres = ['fantasy', 'scifi', 'horror', 'adventure', 'mystery', 'war', 'action'];
         const allMovies = [];
         const seenIds = new Set();
         
-        try {
-            // Fetch movies for each genre
-            for (const genre of genres) {
-                const genreMovies = await this.getMoviesByGenre(genre);
-                
-                // Get full details for each movie
-                for (const movie of genreMovies.slice(0, 10)) { // Limit to top 10 per genre
-                    if (!seenIds.has(movie.id)) {
-                        seenIds.add(movie.id);
-                        
-                        try {
-                            const details = await this.getMovieDetails(movie.id);
-                            if (details) {
-                                allMovies.push(details);
-                            }
-                        } catch (error) {
-                            console.warn(`Failed to get details for movie ${movie.id}:`, error);
+        // Fetch movies for each genre
+        for (const genre of genres) {
+            const genreMovies = await this.getMoviesByGenre(genre);
+            
+            // Get full details for each movie
+            for (const movie of genreMovies.slice(0, 10)) { // Limit to top 10 per genre
+                if (!seenIds.has(movie.id)) {
+                    seenIds.add(movie.id);
+                    
+                    try {
+                        const details = await this.getMovieDetails(movie.id);
+                        if (details) {
+                            allMovies.push(details);
                         }
+                    } catch (error) {
+                        console.warn(`Failed to get details for movie ${movie.id}:`, error);
+                        // Continue with other movies instead of failing completely
                     }
                 }
             }
-            
-            // Cache the database for 24 hours
-            this.cache.set(cacheKey, allMovies);
-            setTimeout(() => this.cache.delete(cacheKey), 24 * 60 * 60 * 1000);
-            
-            return allMovies;
-        } catch (error) {
-            console.error('Failed to build movie database:', error);
-            return this.getMockMovieDatabase();
         }
+        
+        // Cache the database for 24 hours
+        this.cache.set(cacheKey, allMovies);
+        setTimeout(() => this.cache.delete(cacheKey), 24 * 60 * 60 * 1000);
+        
+        return allMovies;
     }
     
     /**

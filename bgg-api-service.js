@@ -364,66 +364,33 @@ class BGGApiService {
     async generateSoundtrackSuggestions(themes, category, gameDetails) {
         // Check if ML matching service is available
         if (typeof window !== 'undefined' && window.MLMatchingService && window.MovieApiService) {
-            try {
-                const mlService = new window.MLMatchingService();
-                const movieService = new window.MovieApiService();
-                
-                // Build movie database
-                const movieDatabase = await movieService.buildMovieDatabase();
-                
-                // Use ML matching
-                const matches = await mlService.matchGameToMovies(gameDetails, movieDatabase);
-                
-                if (matches && matches.length > 0) {
-                    return matches.slice(0, 3).map(match => ({
-                        movie: match.movie.title,
-                        reason: match.matchReasons.join('. '),
-                        tracks: this.generateTrackListForMovie(match.movie),
-                        score: match.score,
-                        year: match.movie.year,
-                        composer: match.movie.composer,
-                        mlGenerated: true
-                    }));
-                }
-            } catch (error) {
-                console.warn('ML matching failed, falling back to rule-based:', error);
-            }
-        }
-        
-        // Fallback to existing rule-based matching
-        // Use the existing movie soundtrack categories mapping
-        if (typeof window !== 'undefined' && window.MOVIE_SOUNDTRACK_CATEGORIES) {
-            const categoryData = window.MOVIE_SOUNDTRACK_CATEGORIES[category];
-            if (categoryData && categoryData.movies) {
-                return categoryData.movies.slice(0, 2).map(movie => ({
-                    movie: movie,
-                    reason: `Auto-generated suggestion based on BGG data: ${themes.join(', ')}`,
-                    tracks: ['Main Theme', 'Adventure Begins', 'Epic Finale'], // Generic track names
-                    mlGenerated: false
+            const mlService = new window.MLMatchingService();
+            const movieService = new window.MovieApiService();
+            
+            // Try ML matching - will throw error if API key not configured
+            const movieDatabase = await movieService.buildMovieDatabase();
+            
+            // Use ML matching
+            const matches = await mlService.matchGameToMovies(gameDetails, movieDatabase);
+            
+            if (matches && matches.length > 0) {
+                return matches.slice(0, 3).map(match => ({
+                    movie: match.movie.title,
+                    reason: match.matchReasons.join('. '),
+                    tracks: this.generateTrackListForMovie(match.movie),
+                    score: match.score,
+                    year: match.movie.year,
+                    composer: match.movie.composer,
+                    mlGenerated: true
                 }));
             }
+            
+            // If no matches found, throw error
+            throw new Error('No movie matches found for this game. Please try a different search or check your API configuration.');
         }
-
-        // Fallback suggestions
-        const fallbackSuggestions = {
-            fantasy: [
-                { movie: 'The Lord of the Rings', reason: 'Epic fantasy adventure', tracks: ['Concerning Hobbits', 'The Bridge of Khazad Dum', 'The Return of the King'] },
-                { movie: 'Game of Thrones', reason: 'Dark fantasy themes', tracks: ['Main Title', 'The Rains of Castamere', 'Light of the Seven'] }
-            ],
-            scifi: [
-                { movie: 'Star Wars', reason: 'Space adventure themes', tracks: ['Main Title', 'The Imperial March', 'Duel of the Fates'] },
-                { movie: 'Blade Runner', reason: 'Futuristic atmosphere', tracks: ['Main Titles', 'Love Theme', 'Tears in Rain'] }
-            ],
-            horror: [
-                { movie: 'The Conjuring', reason: 'Horror and suspense', tracks: ['Main Title', 'The Music Box', 'Annabelle'] },
-                { movie: 'Halloween', reason: 'Classic horror atmosphere', tracks: ['Main Theme', 'Laurie Knows', 'The Shape Hunts'] }
-            ],
-            default: [
-                { movie: 'Hans Zimmer Collection', reason: 'Versatile orchestral themes', tracks: ['Time', 'No Time for Caution', 'Mountains'] }
-            ]
-        };
-
-        return fallbackSuggestions[category] || fallbackSuggestions.default;
+        
+        // If ML services not available, throw error requiring setup
+        throw new Error('ML matching not available. Please configure TMDB API key in the "How It Works" tab to enable intelligent soundtrack matching.');
     }
     
     /**
