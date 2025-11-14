@@ -33,45 +33,8 @@ class TabletopTunes {
         // Store pending game data until music is played
         this.pendingGameData = null;
         
-        // Mock soundtrack data (in a real app, this would come from a server or local files)
-        this.soundtracks = {
-            ambient: [
-                { name: "Forest Whispers", duration: "9:99", url: "#", description: "Gentle forest sounds", movie: "Studio Ghibli Collection" },
-                { name: "Ocean Breeze", duration: "9:99", url: "#", description: "Calming ocean waves", movie: "Moana" },
-                { name: "Mountain Wind", duration: "9:99", url: "#", description: "High altitude ambience", movie: "The Secret Garden" },
-                { name: "Rain Drops", duration: "9:99", url: "#", description: "Soft rainfall sounds", movie: "Amélie" }
-            ],
-            fantasy: [
-                { name: "Dragon's Lair", duration: "9:99", url: "#", description: "Epic fantasy adventure", movie: "Lord of the Rings" },
-                { name: "Enchanted Forest", duration: "9:99", url: "#", description: "Magical woodland journey", movie: "The Chronicles of Narnia" },
-                { name: "Castle Walls", duration: "9:99", url: "#", description: "Medieval fortress theme", movie: "Game of Thrones" },
-                { name: "Mystic Spell", duration: "9:99", url: "#", description: "Magical incantations", movie: "Harry Potter" }
-            ],
-            scifi: [
-                { name: "Space Station", duration: "9:99", url: "#", description: "Futuristic facility ambience", movie: "Interstellar" },
-                { name: "Alien World", duration: "9:99", url: "#", description: "Extraterrestrial exploration", movie: "Star Wars" },
-                { name: "Cyberpunk City", duration: "9:99", url: "#", description: "Neon-lit urban future", movie: "Blade Runner" },
-                { name: "Starship Bridge", duration: "9:99", url: "#", description: "Command center atmosphere", movie: "Star Trek" }
-            ],
-            horror: [
-                { name: "Haunted Manor", duration: "9:99", url: "#", description: "Spooky mansion ambience", movie: "The Conjuring" },
-                { name: "Creeping Shadows", duration: "9:99", url: "#", description: "Suspenseful darkness", movie: "Halloween" },
-                { name: "Ancient Curse", duration: "9:99", url: "#", description: "Mystical dread", movie: "The Mummy" },
-                { name: "Whispers in the Dark", duration: "9:99", url: "#", description: "Eerie whispers", movie: "Sinister" }
-            ],
-            adventure: [
-                { name: "Epic Quest", duration: "9:99", url: "#", description: "Heroic journey theme", movie: "Indiana Jones" },
-                { name: "Treasure Hunt", duration: "9:99", url: "#", description: "Exciting exploration", movie: "Pirates of the Caribbean" },
-                { name: "Victory March", duration: "9:99", url: "#", description: "Triumphant celebration", movie: "Gladiator" },
-                { name: "Journey's End", duration: "9:99", url: "#", description: "Peaceful resolution", movie: "The Lord of the Rings" }
-            ],
-            tavern: [
-                { name: "Merry Gathering", duration: "9:99", url: "#", description: "Festive celebration", movie: "The Princess Bride" },
-                { name: "Bard's Tale", duration: "9:99", url: "#", description: "Storytelling atmosphere", movie: "Robin Hood" },
-                { name: "Drinking Song", duration: "9:99", url: "#", description: "Jovial drinking melody", movie: "Pirates of the Caribbean" },
-                { name: "Late Night Chat", duration: "9:99", url: "#", description: "Quiet tavern ambience", movie: "The Hobbit" }
-            ]
-        };
+        // Initialize empty soundtracks - will be populated from Spotify or other sources
+        this.soundtracks = {};
         
         this.initializeEventListeners();
         this.initializeTabSystem();
@@ -634,52 +597,17 @@ class TabletopTunes {
             `;
         }
         
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Enhanced mock results based on search query
-        const mockResults = this.generateSmartSearchResults(query);
-        
-        this.displaySpotifyResults(mockResults);
-    }
-
-    generateSmartSearchResults(query) {
-        const lowerQuery = query.toLowerCase();
-        let results = [];
-        
-        // Generate contextual results based on search terms
-        if (lowerQuery.includes('fantasy') || lowerQuery.includes('epic') || lowerQuery.includes('orchestral')) {
-            results = [
-                { name: 'The Bridge of Khazad Dum', artist: 'Howard Shore', album: 'Lord of the Rings: Fellowship', id: 'fantasy1', duration: '5:57', popularity: 95 },
-                { name: 'Duel of the Fates', artist: 'John Williams', album: 'Star Wars: Phantom Menace', id: 'fantasy2', duration: '4:14', popularity: 92 },
-                { name: 'Now We Are Free', artist: 'Hans Zimmer', album: 'Gladiator Soundtrack', id: 'fantasy3', duration: '4:18', popularity: 89 },
-                { name: 'Heart of Courage', artist: 'Two Steps From Hell', album: 'Invincible', id: 'fantasy4', duration: '2:51', popularity: 87 }
-            ];
-        } else if (lowerQuery.includes('horror') || lowerQuery.includes('scary') || lowerQuery.includes('dark')) {
-            results = [
-                { name: 'Halloween Theme', artist: 'John Carpenter', album: 'Halloween Soundtrack', id: 'horror1', duration: '2:36', popularity: 94 },
-                { name: 'The Exorcist Theme', artist: 'Mike Oldfield', album: 'Tubular Bells', id: 'horror2', duration: '4:21', popularity: 91 },
-                { name: 'Psycho Strings', artist: 'Bernard Herrmann', album: 'Psycho Soundtrack', id: 'horror3', duration: '2:44', popularity: 88 },
-                { name: 'The Shining Main Title', artist: 'Wendy Carlos', album: 'The Shining Soundtrack', id: 'horror4', duration: '3:08', popularity: 86 }
-            ];
-        } else if (lowerQuery.includes('ambient') || lowerQuery.includes('peaceful') || lowerQuery.includes('calm')) {
-            results = [
-                { name: 'Samsara', artist: 'Audiomachine', album: 'Chronicles', id: 'ambient1', duration: '3:45', popularity: 85 },
-                { name: 'Weightless', artist: 'Marconi Union', album: 'Distance', id: 'ambient2', duration: '8:10', popularity: 82 },
-                { name: 'The Path of the Wind', artist: 'Joe Hisaishi', album: 'My Neighbor Totoro', id: 'ambient3', duration: '5:23', popularity: 90 },
-                { name: 'River Flows in You', artist: 'Yiruma', album: 'First Love', id: 'ambient4', duration: '3:20', popularity: 87 }
-            ];
-        } else {
-            // Default results for any other query
-            results = [
-                { name: `${query} Epic Version`, artist: 'Movie Soundtracks', album: 'Cinematic Collection', id: `search1_${Date.now()}`, duration: '4:23', popularity: 88 },
-                { name: `${query} Orchestral Mix`, artist: 'Epic Music World', album: 'Heroic Tales', id: `search2_${Date.now()}`, duration: '3:45', popularity: 85 },
-                { name: `${query} Theme`, artist: 'Soundtrack Artists', album: 'Game Music Collection', id: `search3_${Date.now()}`, duration: '2:56', popularity: 82 },
-                { name: `${query} Instrumental`, artist: 'Cinematic Music', album: 'Background Scores', id: `search4_${Date.now()}`, duration: '5:12', popularity: 79 }
-            ];
+        // Real Spotify API integration would go here
+        // For now, show a message that Spotify connection is required
+        if (resultsDiv) {
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                    <i class="fab fa-spotify" style="font-size: 3rem; color: var(--spotify-green); margin-bottom: 1rem;"></i>
+                    <p>Spotify search requires an active connection.</p>
+                    <p style="font-size: 0.9rem; margin-top: 0.5rem;">Please connect your Spotify account to search for tracks.</p>
+                </div>
+            `;
         }
-        
-        return results;
     }
     
     displaySpotifyResults(results) {
@@ -723,13 +651,13 @@ class TabletopTunes {
                         
                         <!-- Action Buttons -->
                         <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-                            <button onclick="event.stopPropagation(); tabletopTunes.previewSpotifyTrack('${track.id}')" 
+                            <button onclick="event.stopPropagation(); window.tabletopTunes.previewSpotifyTrack('${track.id}')" 
                                     style="padding: 0.5rem; background: var(--bg-card); border: 1px solid var(--gray-600); border-radius: var(--radius-sm); color: var(--text-secondary); cursor: pointer; transition: all 0.2s ease;"
                                     onmouseover="this.style.background='var(--primary-color)'; this.style.color='white'; this.style.borderColor='var(--primary-color)'"
                                     onmouseout="this.style.background='var(--bg-card)'; this.style.color='var(--text-secondary)'; this.style.borderColor='var(--gray-600)'">
                                 <i class="fas fa-play"></i>
                             </button>
-                            <button onclick="event.stopPropagation(); tabletopTunes.addSpotifyTrack('${track.id}', '${track.name.replace(/'/g, "\\'")}', '${track.artist.replace(/'/g, "\\'")}')" 
+                            <button onclick="event.stopPropagation(); window.tabletopTunes.addSpotifyTrack('${track.id}', '${track.name.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}', '${track.artist.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}')" 
                                     style="padding: 0.5rem 1rem; background: var(--spotify-green); border: none; border-radius: var(--radius-sm); color: white; cursor: pointer; font-weight: 500; transition: all 0.2s ease;"
                                     onmouseover="this.style.background='#1db954'; this.style.transform='translateY(-1px)'"
                                     onmouseout="this.style.background='var(--spotify-green)'; this.style.transform='translateY(0)'">
@@ -1325,10 +1253,13 @@ class TabletopTunes {
         });
         
         // Add active class to selected card
-        document.querySelector(`[data-category="${category}"]`).classList.add('active');
+        const selectedCard = document.querySelector(`[data-category="${category}"]`);
+        if (selectedCard) {
+            selectedCard.classList.add('active');
+        }
         
         this.currentCategory = category;
-        this.currentPlaylist = [...this.soundtracks[category]];
+        this.currentPlaylist = this.soundtracks[category] ? [...this.soundtracks[category]] : [];
         this.currentTrackIndex = 0;
         
         // Update playlist header based on context
@@ -3963,7 +3894,7 @@ class TabletopTunes {
                 // Convert movie tracks to our format
                 this.currentPlaylist = suggestion.tracks.map((trackName, index) => ({
                     name: trackName,
-                    duration: `9:99`,
+                    duration: '',
                     url: "#",
                     description: `From ${movieName}`,
                     movie: movieName
@@ -3986,7 +3917,7 @@ class TabletopTunes {
         // Create a single track playlist
         this.currentPlaylist = [{
             name: trackName,
-            duration: `9:99`,
+            duration: '',
             url: "#",
             description: `From ${movieName}`,
             movie: movieName
@@ -4017,7 +3948,7 @@ class TabletopTunes {
             
             this.currentPlaylist = genericTracks.map((trackName, index) => ({
                 name: trackName,
-                duration: `9:99`,
+                duration: '',
                 url: "#",
                 description: `From ${movieName} (BGG suggestion for ${gameName})`,
                 movie: movieName,
@@ -4037,7 +3968,7 @@ class TabletopTunes {
         // Create a single track playlist for BGG suggestions
         this.currentPlaylist = [{
             name: trackName,
-            duration: `9:99`,
+            duration: '',
             url: "#",
             description: `From ${movieName} (BGG suggestion for ${gameName})`,
             movie: movieName,
@@ -4201,7 +4132,7 @@ class TabletopTunes {
                 trackDescriptionElement.style.display = track.description ? 'inline' : 'none';
             }
             
-            document.getElementById('duration').textContent = track.duration || '9:99';
+            document.getElementById('duration').textContent = track.duration || '--:--';
             
             this.updatePlaybackStatus(`Now playing: ${track.name} from ${track.movie}`);
         } else {
@@ -4229,22 +4160,8 @@ class TabletopTunes {
     loadAdditionalSoundtrack(movieTitle, index) {
         console.log(`Loading additional soundtrack: ${movieTitle}`);
         
-        // Create mock tracks for the movie
-        const mockTracks = [
-            { name: 'Main Theme', duration: '4:23', url: '#', description: `Main theme from ${movieTitle}`, movie: movieTitle },
-            { name: 'Atmospheric Soundscape', duration: '6:45', url: '#', description: `Ambient track from ${movieTitle}`, movie: movieTitle },
-            { name: 'Action Sequence', duration: '3:12', url: '#', description: `Exciting track from ${movieTitle}`, movie: movieTitle }
-        ];
-        
-        // Update current playlist
-        this.currentPlaylist = mockTracks;
-        this.currentTrackIndex = 0;
-        this.currentCategory = 'api-enhanced';
-        this.matchingMode = 'api-movie';
-        
-        // Update display
-        this.updateDisplay();
-        this.showNotification(`Loaded ${movieTitle} soundtrack from API!`, 'success');
+        // Update display with message that real soundtrack loading would happen here
+        this.showNotification(`Soundtrack loading for ${movieTitle} requires API integration`, 'default');
     }
     
     /**
