@@ -179,7 +179,10 @@ class TabletopTunes {
             spotifySearchBtn.addEventListener('click', () => this.searchSpotify());
         }
         
-        // Spotify callback will be set globally after class definition
+        // Check if Spotify SDK is already ready (in case it loaded before TabletopTunes)
+        if (window.spotifySDKReady && typeof this.setupSpotifyPlayer === 'function') {
+            this.setupSpotifyPlayer();
+        }
     }
     
     async connectSpotify() {
@@ -3649,7 +3652,7 @@ class TabletopTunes {
         if (!isGameInMyGames) {
             html += `
                 <div class="add-to-my-games-section">
-                    <button class="add-to-my-games-btn" onclick="tabletopTunes.addGameFromBGG('${bggGame.name}')">
+                    <button class="add-to-my-games-btn" onclick="window.tabletopTunes.addGameFromBGG('${bggGame.name}')">
                         <i class="fas fa-plus-circle"></i> Add "${bggGame.name}" to My Games
                     </button>
                     <p class="add-game-hint">Add this game to your collection without needing to play music first!</p>
@@ -3860,7 +3863,7 @@ class TabletopTunes {
         if (!isGameInMyGames) {
             html += `
                 <div class="add-to-my-games-section">
-                    <button class="add-to-my-games-btn" onclick="tabletopTunes.addGameFromThemeAnalysis('${gameName}', '${result.category}')">
+                    <button class="add-to-my-games-btn" onclick="window.tabletopTunes.addGameFromThemeAnalysis('${gameName}', '${result.category}')">
                         <i class="fas fa-plus-circle"></i> Add "${gameName}" to My Games
                     </button>
                     <p class="add-game-hint">Add this game to your collection without needing to play music first!</p>
@@ -4355,7 +4358,8 @@ class TabletopTunes {
 
         if (gameImage) {
             // Use a placeholder game image - in production, this would come from BGG API
-            const imageUrl = (gameData.bggData?.image && gameData.bggData.image.trim()) || `https://via.placeholder.com/120x120/4ecdc4/ffffff?text=${encodeURIComponent(gameData.name?.charAt(0) || 'G')}`;
+            const imageUrl = (gameData.bggData?.image && gameData.bggData.image.trim()) || 
+                this.generatePlaceholderImage(gameData.name?.charAt(0) || 'G', 120, 120, '4ecdc4', 'ffffff');
             gameImage.src = imageUrl;
             gameImage.alt = `${gameData.name || 'Game'} cover`;
         }
@@ -4397,7 +4401,8 @@ class TabletopTunes {
 
         if (songImage) {
             // Use a placeholder movie poster - in production, this would come from movie API
-            const imageUrl = (options.movieImage && options.movieImage.trim()) || `https://via.placeholder.com/80x120/6c5ce7/ffffff?text=${encodeURIComponent(movieTitle?.charAt(0) || 'M')}`;
+            const imageUrl = (options.movieImage && options.movieImage.trim()) || 
+                this.generatePlaceholderImage(movieTitle?.charAt(0) || 'M', 80, 120, '6c5ce7', 'ffffff');
             songImage.src = imageUrl;
             songImage.alt = `${movieTitle || 'Movie'} poster`;
         }
@@ -4504,6 +4509,35 @@ class TabletopTunes {
     truncateText(text, maxLength) {
         if (!text || text.length <= maxLength) return text;
         return text.substring(0, maxLength).trim() + '...';
+    }
+
+    /**
+     * Generate a placeholder image as a data URI
+     * @param {string} text - Text to display (usually first letter)
+     * @param {number} width - Image width
+     * @param {number} height - Image height
+     * @param {string} bgColor - Background color (hex without #)
+     * @param {string} textColor - Text color (hex without #)
+     * @returns {string} Data URI for the placeholder image
+     */
+    generatePlaceholderImage(text, width, height, bgColor, textColor) {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        // Fill background
+        ctx.fillStyle = '#' + bgColor;
+        ctx.fillRect(0, 0, width, height);
+        
+        // Draw text
+        ctx.fillStyle = '#' + textColor;
+        ctx.font = `bold ${Math.floor(height * 0.4)}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, width / 2, height / 2);
+        
+        return canvas.toDataURL('image/png');
     }
 
     /**
@@ -5824,10 +5858,14 @@ class TabletopTunes {
 // Initialize the application when the page loads
 let tabletopTunes;
 
+// Track if Spotify SDK is ready
+let spotifySDKReady = false;
+
 // Initialize Spotify Web Playback SDK when available
 window.onSpotifyWebPlaybackSDKReady = () => {
     console.log('Spotify SDK Ready');
-    if (window.tabletopTunes) {
+    spotifySDKReady = true;
+    if (window.tabletopTunes && typeof window.tabletopTunes.setupSpotifyPlayer === 'function') {
         window.tabletopTunes.setupSpotifyPlayer();
     }
 };
