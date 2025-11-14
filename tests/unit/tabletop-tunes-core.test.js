@@ -6,23 +6,40 @@
 // Mock DOM elements before importing the main script
 const mockElements = {};
 
-global.document = {
-  getElementById: jest.fn((id) => mockElements[id] || {
-    addEventListener: jest.fn(),
-    style: {},
-    classList: { add: jest.fn(), remove: jest.fn(), toggle: jest.fn() },
-    innerHTML: '',
-    textContent: '',
-    value: ''
-  }),
-  querySelector: jest.fn(() => ({ addEventListener: jest.fn() })),
-  querySelectorAll: jest.fn(() => []),
-  createElement: jest.fn(() => ({
-    addEventListener: jest.fn(),
-    setAttribute: jest.fn(),
-    style: {},
-    classList: { add: jest.fn(), remove: jest.fn() }
-  }))
+// Create a default mock element factory
+const createMockElement = () => ({
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+  style: {},
+  classList: { add: jest.fn(), remove: jest.fn(), toggle: jest.fn(), contains: jest.fn() },
+  innerHTML: '',
+  textContent: '',
+  value: '',
+  dataset: {},
+  contains: jest.fn(() => false),
+  play: jest.fn(() => Promise.resolve()),
+  pause: jest.fn(),
+  currentTime: 0,
+  duration: 0
+});
+
+// Override document methods (jsdom provides document, but we need to mock its methods)
+const originalGetElementById = document.getElementById;
+document.getElementById = function(id) {
+  return mockElements[id] || createMockElement();
+};
+
+document.querySelector = function() {
+  return createMockElement();
+};
+
+document.querySelectorAll = function() {
+  return [];
+};
+
+const originalCreateElement = document.createElement;
+document.createElement = function() {
+  return createMockElement();
 };
 
 // Load the game database
@@ -35,15 +52,46 @@ eval(fs.readFileSync(gameDataPath, 'utf8'));
 global.BOARD_GAMES_DATABASE = BOARD_GAMES_DATABASE;
 global.window = { BOARD_GAMES_DATABASE };
 
+// Load BGGApiService and MovieApiService
+const BGGApiService = require('../../bgg-api-service.js');
+const MovieApiService = require('../../movie-api-service.js');
+global.BGGApiService = BGGApiService;
+global.MovieApiService = MovieApiService;
+
 // Load the main script
 const scriptPath = path.join(__dirname, '../../script.js');
 const scriptContent = fs.readFileSync(scriptPath, 'utf8');
 
-// Create a mock TabletopTunes class by evaluating only the class definition
-const classMatch = scriptContent.match(/class TabletopTunes \{[\s\S]*?\n\}/);
-if (classMatch) {
-  eval(classMatch[0]);
+// Extract the TabletopTunes class definition
+// Find the start of the class
+const classStart = scriptContent.indexOf('class TabletopTunes {');
+if (classStart === -1) {
+  throw new Error('Could not find TabletopTunes class in script.js');
 }
+
+// Find the end of the class - count braces to find the matching closing brace
+let braceCount = 0;
+let inClass = false;
+let classEnd = classStart;
+
+for (let i = classStart; i < scriptContent.length; i++) {
+  const char = scriptContent[i];
+  
+  if (char === '{') {
+    braceCount++;
+    inClass = true;
+  } else if (char === '}') {
+    braceCount--;
+    if (inClass && braceCount === 0) {
+      classEnd = i + 1;
+      break;
+    }
+  }
+}
+
+const classDefinition = scriptContent.substring(classStart, classEnd);
+// Evaluate the class definition and assign to global scope
+global.TabletopTunes = eval('(' + classDefinition + ')');
 
 describe('TabletopTunes Core Functionality', () => {
   let tabletopTunes;

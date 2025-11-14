@@ -28,6 +28,15 @@ describe('TabletopTunes Application Workflow', () => {
       head: { appendChild: jest.fn() }
     };
     
+    // Create a functional localStorage mock
+    const localStorageData = {};
+    const localStorageMock = {
+      getItem: jest.fn().mockImplementation((key) => localStorageData[key] || null),
+      setItem: jest.fn().mockImplementation((key, value) => { localStorageData[key] = value; }),
+      removeItem: jest.fn().mockImplementation((key) => { delete localStorageData[key]; }),
+      clear: jest.fn().mockImplementation(() => { Object.keys(localStorageData).forEach(key => delete localStorageData[key]); })
+    };
+    
     mockWindow = {
       addEventListener: jest.fn(),
       Audio: jest.fn(() => ({
@@ -35,11 +44,7 @@ describe('TabletopTunes Application Workflow', () => {
         pause: jest.fn(),
         addEventListener: jest.fn()
       })),
-      localStorage: {
-        getItem: jest.fn(),
-        setItem: jest.fn(),
-        removeItem: jest.fn()
-      },
+      localStorage: localStorageMock,
       navigator: {
         serviceWorker: { register: jest.fn(() => Promise.resolve()) }
       },
@@ -54,6 +59,12 @@ describe('TabletopTunes Application Workflow', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Reset localStorage mock implementations to default behavior
+    const localStorageData = {};
+    mockWindow.localStorage.getItem.mockImplementation((key) => localStorageData[key] || null);
+    mockWindow.localStorage.setItem.mockImplementation((key, value) => { localStorageData[key] = value; });
+    mockWindow.localStorage.removeItem.mockImplementation((key) => { delete localStorageData[key]; });
   });
 
   describe('HTML Structure Analysis', () => {

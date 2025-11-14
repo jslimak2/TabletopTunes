@@ -25,6 +25,14 @@ global.Response = class Response {
   json() {
     return Promise.resolve(JSON.parse(this.body));
   }
+  
+  clone() {
+    return new Response(this.body, {
+      status: this.status,
+      statusText: this.statusText,
+      headers: Object.fromEntries(this.headers)
+    });
+  }
 };
 
 // Mock localStorage

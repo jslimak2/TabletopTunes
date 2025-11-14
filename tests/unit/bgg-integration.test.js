@@ -120,18 +120,15 @@ describe('BGG API Integration', () => {
     });
 
     describe('Soundtrack Generation', () => {
-        test('should generate appropriate soundtrack suggestions', () => {
+        test('should require ML services for soundtrack suggestions', async () => {
             const themes = ['fantasy', 'adventure'];
             const category = 'fantasy';
             const gameDetails = { name: 'Test Game' };
 
-            const suggestions = bggService.generateSoundtrackSuggestions(themes, category, gameDetails);
-
-            expect(suggestions).toHaveLength(2);
-            expect(suggestions[0]).toHaveProperty('movie');
-            expect(suggestions[0]).toHaveProperty('reason');
-            expect(suggestions[0]).toHaveProperty('tracks');
-            expect(suggestions[0].reason).toContain('Epic fantasy adventure'); // Use the actual reason from fallback suggestions
+            // Should throw error when ML services not configured
+            await expect(
+                bggService.generateSoundtrackSuggestions(themes, category, gameDetails)
+            ).rejects.toThrow('ML matching not available');
         });
     });
 
