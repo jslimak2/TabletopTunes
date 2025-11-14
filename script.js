@@ -4355,7 +4355,8 @@ class TabletopTunes {
 
         if (gameImage) {
             // Use a placeholder game image - in production, this would come from BGG API
-            gameImage.src = gameData.bggData?.image || `https://via.placeholder.com/120x120/4ecdc4/ffffff?text=${encodeURIComponent(gameData.name?.charAt(0) || 'G')}`;
+            const imageUrl = (gameData.bggData?.image && gameData.bggData.image.trim()) || `https://via.placeholder.com/120x120/4ecdc4/ffffff?text=${encodeURIComponent(gameData.name?.charAt(0) || 'G')}`;
+            gameImage.src = imageUrl;
             gameImage.alt = `${gameData.name || 'Game'} cover`;
         }
 
@@ -4396,7 +4397,8 @@ class TabletopTunes {
 
         if (songImage) {
             // Use a placeholder movie poster - in production, this would come from movie API
-            songImage.src = options.movieImage || `https://via.placeholder.com/80x120/6c5ce7/ffffff?text=${encodeURIComponent(movieTitle?.charAt(0) || 'M')}`;
+            const imageUrl = (options.movieImage && options.movieImage.trim()) || `https://via.placeholder.com/80x120/6c5ce7/ffffff?text=${encodeURIComponent(movieTitle?.charAt(0) || 'M')}`;
+            songImage.src = imageUrl;
             songImage.alt = `${movieTitle || 'Movie'} poster`;
         }
 
@@ -5826,7 +5828,7 @@ let tabletopTunes;
 window.onSpotifyWebPlaybackSDKReady = () => {
     console.log('Spotify SDK Ready');
     if (window.tabletopTunes) {
-        tabletopTunes.setupSpotifyPlayer();
+        window.tabletopTunes.setupSpotifyPlayer();
     }
 };
 
