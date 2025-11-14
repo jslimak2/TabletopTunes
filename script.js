@@ -1253,10 +1253,13 @@ class TabletopTunes {
         });
         
         // Add active class to selected card
-        document.querySelector(`[data-category="${category}"]`).classList.add('active');
+        const selectedCard = document.querySelector(`[data-category="${category}"]`);
+        if (selectedCard) {
+            selectedCard.classList.add('active');
+        }
         
         this.currentCategory = category;
-        this.currentPlaylist = [...this.soundtracks[category]];
+        this.currentPlaylist = this.soundtracks[category] ? [...this.soundtracks[category]] : [];
         this.currentTrackIndex = 0;
         
         // Update playlist header based on context
